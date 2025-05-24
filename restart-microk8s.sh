@@ -1,7 +1,7 @@
 #!/bin/bash
 nodeArray=( "${@}" )
 if [ $# -eq 0 ]; then
-    read -p "Enter the hostname of the node you want to upgrade: " nodeName
+    read -p "Enter the hostname of the node you want to restart: " nodeName
     nodeArray+=( $nodeName )
 fi
 echo "The Microk8s service will be restarted on the following nodes:"
