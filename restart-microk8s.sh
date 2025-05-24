@@ -12,9 +12,6 @@ done
 read -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 for nodeName in "${nodeArray[@]}"; do
     nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
-    # sudo ssh "root@$nodeFQDN" sudo microk8s stop
-    # sudo ssh "root@$nodeFQDN" sudo microk8s start
-    # sudo ssh "root@$nodeFQDN" sudo microk8s status --wait
     sudo ssh "root@$nodeFQDN" << EOF
 sudo microk8s stop && sudo microk8s start && sudo microk8s status --wait
 EOF
