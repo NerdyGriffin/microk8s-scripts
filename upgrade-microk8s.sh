@@ -27,7 +27,7 @@ for nodeName in "${nodeArray[@]}"; do
     sudo microk8s kubectl get node
     sudo microk8s kubectl get pod -o wide
     pause
-    sudo ssh "root@$nodeFQDN" sudo snap refresh microk8s --channel=1.33/stable
+    sudo ssh "root@$nodeFQDN" sudo snap refresh microk8s --channel=1.34/stable
     sudo ssh "root@$nodeFQDN" sudo snap refresh microk8s --hold
     sudo ssh "root@$nodeFQDN" sudo snap alias microk8s.kubectl kubectl
     sudo ssh "root@$nodeFQDN" sudo microk8s addons repo update core
