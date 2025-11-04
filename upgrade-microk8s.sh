@@ -31,6 +31,7 @@ for nodeName in "${nodeArray[@]}"; do
     sudo ssh "root@$nodeFQDN" sudo snap refresh microk8s --hold
     sudo ssh "root@$nodeFQDN" sudo snap alias microk8s.kubectl kubectl
     sudo ssh "root@$nodeFQDN" sudo microk8s addons repo update core
+    sudo ssh "root@$nodeFQDN" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
     sudo microk8s kubectl get node
     pause
     sudo microk8s kubectl uncordon "$nodeFQDN"
@@ -55,26 +56,28 @@ addonList=(
 )
 for addonName in ${addonList[*]}; do
     echo '----------------'
-    echo && echo "Disabling $addonName... "
+    echo "Disabling $addonName... "
     sudo microk8s disable "$addonName"
-    for addonName in ${addonList[*]}; do
-        echo && echo "Enabling $addonName... "
-        case "$addonName" in
-            "dns")
-                sudo microk8s enable dns:1.1.1.1
-                ;;
-            *"metallb"*)
-                sudo microk8s enable "$addonName" '10.64.140.0/24'
-                ;;
-            *)
-                sudo microk8s enable "$addonName"
-                ;;
-        esac
-    done
 done
 sudo microk8s disable hostpath-storage:destroy-storage
-nodeNameList=( "kube-10" "kube-11" "kube-12" "kube-13" "kube-20" "kube-21" )
-for nodeName in ${nodeNameList[*]}; do
+for addonName in ${addonList[*]}; do
+    echo '----------------'
+    echo "Enabling $addonName... "
+    case "$addonName" in
+        "dns")
+            sudo microk8s enable dns:1.1.1.1
+            ;;
+        *"metallb"*)
+            sudo microk8s enable "$addonName" '10.64.140.0/24'
+            ;;
+        *)
+            sudo microk8s enable "$addonName"
+            ;;
+    esac
+done
+sudo microk8s disable hostpath-storage:destroy-storage
+nodeNameList=( $(microk8s kubectl get nodes | awk 'NR > 1 {print $1}') )
+for nodeName in "${nodeNameList[*]}"; do
     nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
     sudo ssh "root@$nodeFQDN" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
 done
