@@ -73,7 +73,13 @@ for addonName in ${addonList[*]}; do
     done
 done
 sudo microk8s disable hostpath-storage:destroy-storage
+nodeNameList=( "kube-10" "kube-11" "kube-12" "kube-13" "kube-20" "kube-21" )
+for nodeName in ${nodeNameList[*]}; do
+    nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
+    sudo ssh "root@$nodeFQDN" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
+done
 sudo microk8s kubectl -n kubernetes-dashboard patch svc kubernetes-dashboard-kong-proxy --patch='{"spec":{"loadBalancerIP":"10.64.140.8","type": "LoadBalancer"}}'
 sudo microk8s kubectl -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/coredns-patch.yaml"
+# sudo microk8s kubectl -n kube-system edit configmap/coredns
 sudo microk8s kubectl -n kube-system patch svc kube-dns --patch='{"spec":{"loadBalancerIP":"10.64.140.10","type": "LoadBalancer"}}'
 sudo microk8s kubectl apply -f "$(dirname "$0")/ingress-service.yaml"
