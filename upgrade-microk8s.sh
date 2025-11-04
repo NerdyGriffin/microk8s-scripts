@@ -1,11 +1,11 @@
 #!/bin/bash
 function pause(){
-  if [ -t 0 ]; then
-    sleep 20
-#    read -p 'Press [Enter] key to continue...'
-  else
-    sleep 10
-  fi
+    if [ -t 0 ]; then
+        sleep 20
+#        read -p 'Press [Enter] key to continue...'
+    else
+        sleep 10
+    fi
 }
 nodeArray=( "${@}" )
 if [ $# -eq 0 ]; then
