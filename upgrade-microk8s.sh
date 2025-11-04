@@ -20,7 +20,7 @@ done
 read -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 for nodeName in "${nodeArray[@]}"; do
     nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
-    sudo microk8s disable hostpath-storage
+    sudo microk8s disable hostpath-storage:destroy-storage
     sudo microk8s kubectl drain "$nodeFQDN" --delete-emptydir-data --grace-period=600 --ignore-daemonsets --skip-wait-for-delete-timeout=3600
     echo 'Waiting for node to stop...'
     sleep 10
