@@ -7,9 +7,7 @@ spec:
   selector:
     name: nginx-ingress-microk8s
   type: LoadBalancer
-  # loadBalancerIP is optional. MetalLB will automatically allocate an IP
-  # from its pool if not specified. You can also specify one manually.
-  loadBalancerIP: 10.64.140.0
+  loadBalancerIP: 10.64.140.1
   ports:
     - name: http
       protocol: TCP
