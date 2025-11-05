@@ -46,4 +46,3 @@ set_common_trap() {
     rc=0
     trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
 }
-
