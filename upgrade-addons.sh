@@ -37,13 +37,11 @@ if [ $# -eq 0 ]; then
     nodeArray=( $(${KUBECTL} get nodes | awk 'NR > 1 {print $1}') )
 fi
 echo "The Microk8s addons will be upgraded on the following nodes:"
-for nodeName in "${nodeArray[@]}"; do
-    nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
+for nodeFQDN in "${nodeArray[@]}"; do
     echo "$nodeName = $nodeFQDN"
 done
 read -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-for nodeName in "${nodeArray[@]}"; do
-    nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
+for nodeFQDN in "${nodeArray[@]}"; do
     sshDest="root@$nodeFQDN"
     ${KUBECTL} get node "$nodeFQDN"
     sudo microk8s disable hostpath-storage:destroy-storage
@@ -93,8 +91,7 @@ for addonName in "${addonList[@]}"; do
 done
 sudo microk8s disable hostpath-storage:destroy-storage
 nodeArray=( $(${KUBECTL} get nodes | awk 'NR > 1 {print $1}') )
-for nodeName in "${nodeArray[@]}"; do
-    nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
+for nodeFQDN in "${nodeArray[@]}"; do
     sshDest="root@$nodeFQDN"
     ${KUBECTL} get node "$nodeFQDN"
     sudo ssh "$sshDest" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
