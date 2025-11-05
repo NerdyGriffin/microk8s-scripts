@@ -5,60 +5,68 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 set_common_trap
 detect_kubectl
-ensure_jq >/dev/null 2>&1 || echo "Continuing without jq (will use conservative JSON string checks)."
+ensure_jq >/dev/null 2>&1 || echo "Continuing without jq (will use fallback dedupe)."
 
-cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
-if [ -n "$cert_manager_json" ]; then
-    if command -v jq >/dev/null 2>&1; then
-        container_index=$(echo "$cert_manager_json" | jq '(.spec.template.spec.containers | to_entries[] | select(.value.name=="cert-manager-controller") | .key) // 0')
-        if ! echo "$cert_manager_json" | jq -e ".spec.template.spec.containers[$container_index].args" >/dev/null 2>&1; then
-            payload=$(printf '[{"op":"add","path":"/spec/template/spec/containers/%s/args","value":[]}]' "$container_index")
-            $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p="$payload" >/dev/null 2>&1 || true
-            cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
-        fi
+# Configurables
+NS="${NS:-cert-manager}"
+CONTAINER="${CONTAINER:-cert-manager-controller}"
+NAMESERVERS="${NAMESERVERS:-1.1.1.1:53,1.0.0.1:53}"
 
-        ensure_arg() {
-            local arg="$1"
-            if ! echo "$cert_manager_json" | jq -e ".spec.template.spec.containers[$container_index].args | index(\"$arg\")" >/dev/null 2>&1; then
-                payload=$(printf '[{"op":"add","path":"/spec/template/spec/containers/%s/args/-","value":"%s"}]' "$container_index" "$arg")
-                $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p="$payload"
-                cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
-            fi
-        }
+# Helper to build a strategic-merge patch payload targeting the container by name
+build_patch_payload() {
+    local args_json="$1"
+    cat <<EOF
+{"spec":{"template":{"spec":{"containers":[{"name":"$CONTAINER","args":$args_json}]}}}}
+EOF
+}
 
-        ensure_arg "--dns01-recursive-nameservers-only"
-        ensure_arg "--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"
-    else
-        # Fallback: conservative JSON-string checks, assume container 0
-        $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args","value":[]} ]' >/dev/null 2>&1 || true
-        if ! echo "$cert_manager_json" | grep -q '"--dns01-recursive-nameservers-only"'; then
-            $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--dns01-recursive-nameservers-only"}]'
-        fi
-        if ! echo "$cert_manager_json" | grep -q '"--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"'; then
-            $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"}]'
-        fi
-    fi
+cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n "$NS" 2>/dev/null || true)
+if [ -z "$cert_manager_json" ]; then
+    echo "Warning: deployment cert-manager not found in namespace $NS. Skipping DNS patch."
+    exit 0
+fi
+
+if command -v jq >/dev/null 2>&1; then
+    # Current args for the named controller container
+    current_args_json=$(echo "$cert_manager_json" | jq -c --arg name "$CONTAINER" '[.spec.template.spec.containers[] | select(.name==$name) | (.args // [])][0] // []')
+    # Merge desired flags, dedupe while preserving first-seen order
+    new_args_json=$(echo "$current_args_json" | jq --arg ns "$NAMESERVERS" '
+        . + ["--dns01-recursive-nameservers-only", ("--dns01-recursive-nameservers="+$ns)]
+        | reduce .[] as $a ([]; if index($a) then . else . + [$a] end)
+    ')
+    payload=$(build_patch_payload "$new_args_json")
+    $KUBECTL patch deployment cert-manager -n "$NS" --type=strategic -p "$payload" >/dev/null
 else
-    echo "Warning: cert-manager deployment not found in namespace cert-manager. Skipping DNS patch."
+    # Fallback without jq: fetch current args space-separated, then dedupe preserving order
+    current_args_str=$($KUBECTL get deployment cert-manager -n "$NS" -o jsonpath="{.spec.template.spec.containers[?(@.name=='$CONTAINER')].args}" 2>/dev/null || true)
+    dedup=""
+    add_unique() {
+        for a in "$@"; do
+            case " $dedup " in *" $a "*) : ;; *) dedup="${dedup:+$dedup }$a" ;; esac
+        done
+    }
+    # shellcheck disable=SC2206
+    [ -n "$current_args_str" ] && add_unique ${current_args_str}
+    add_unique "--dns01-recursive-nameservers-only" "--dns01-recursive-nameservers=$NAMESERVERS"
+    if [ -n "$dedup" ]; then
+        new_args_json="[\"$(printf '%s' "$dedup" | sed 's/"/\\"/g; s/ /","/g')\"]"
+    else
+        new_args_json="[]"
+    fi
+    payload=$(build_patch_payload "$new_args_json")
+    $KUBECTL patch deployment cert-manager -n "$NS" --type=strategic -p "$payload" >/dev/null
 fi
 
 # Display resulting args for the patched container so the user can verify changes.
 echo
 echo "--- cert-manager args after patch ---"
-if [ -n "${cert_manager_json:-}" ]; then
-    if command -v jq >/dev/null 2>&1; then
-        # Re-fetch JSON to show the latest state
-        cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
-        container_index=$(echo "$cert_manager_json" | jq '(.spec.template.spec.containers | to_entries[] | select(.value.name=="cert-manager-controller") | .key) // 0')
-        echo "Container index: $container_index"
-        echo "$cert_manager_json" | jq -r ".spec.template.spec.containers[$container_index].args[]?" || true
-    else
-        # Use jsonpath to extract args (works with kubectl). jsonpath returns plain text.
-        echo "Container index: 0"
-        $KUBECTL get deployment cert-manager -n cert-manager -o jsonpath='{.spec.template.spec.containers[0].args}' | sed 's/ /\n/g' || true
-    fi
+if command -v jq >/dev/null 2>&1; then
+    cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n "$NS" 2>/dev/null || true)
+    echo "Container: $CONTAINER"
+    echo "$cert_manager_json" | jq -r --arg name "$CONTAINER" '.spec.template.spec.containers[] | select(.name==$name) | (.args[]? // empty)'
 else
-    echo "No cert-manager JSON available to display args."
+    echo "Container: $CONTAINER"
+    $KUBECTL get deployment cert-manager -n "$NS" -o jsonpath="{.spec.template.spec.containers[?(@.name=='$CONTAINER')].args}" | sed 's/ /\n/g' || true
 fi
 
 exit 0
