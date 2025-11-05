@@ -75,9 +75,16 @@ for nodeName in "${nodeArray[@]}"; do
     microk8s kubectl get node "$nodeFQDN"
     sudo ssh "$sshDest" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
 done
-if [[ -z $(microk8s kubectl get -o json deployment cert-manager --namespace cert-manager | grep 'dns01-recursive-nameservers-only') ]]; then
-    microk8s kubectl patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--dns01-recursive-nameservers-only"}]'
-    microk8s kubectl patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"}]'
+cert_manager_json=$(microk8s kubectl get -o json deployment cert-manager -n cert-manager 2>/dev/null)
+if [ -n "$cert_manager_json" ]; then
+    if ! echo "$cert_manager_json" | jq -e '.spec.template.spec.containers[0].args // [] | index("--dns01-recursive-nameservers-only")' >/dev/null; then
+        microk8s kubectl patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--dns01-recursive-nameservers-only"}]'
+    fi
+    if ! echo "$cert_manager_json" | jq -e '.spec.template.spec.containers[0].args // [] | index("--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53")' >/dev/null; then
+        microk8s kubectl patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"}]'
+    fi
+else
+    echo "Warning: cert-manager deployment not found in namespace cert-manager. Skipping DNS patch."
 fi
 microk8s kubectl -n kubernetes-dashboard patch svc kubernetes-dashboard-kong-proxy --patch='{"spec":{"loadBalancerIP":"10.64.140.8","type": "LoadBalancer"}}'
 microk8s kubectl -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/coredns-patch.yaml"
