@@ -1,6 +1,8 @@
 #!/bin/bash
+# DESCRIPTION: Restart MicroK8s service on specified nodes (requires confirmation)
 set -euo pipefail
-source "$(dirname "$0")/lib.sh"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/lib.sh"
 set_common_trap
 detect_kubectl
 

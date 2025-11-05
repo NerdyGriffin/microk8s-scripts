@@ -1,8 +1,8 @@
 #!/bin/bash
+# DESCRIPTION: Collect and display CoreDNS pod logs from kube-system namespace
 set -euo pipefail
-
-# Shared helpers
-source "$(dirname "$0")/lib.sh"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/lib.sh"
 set_common_trap
 detect_kubectl
 

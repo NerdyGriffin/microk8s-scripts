@@ -1,11 +1,8 @@
 #!/bin/bash
-# Safety: fail fast and print diagnostics on errors
-# Patch cert-manager deployment to add dns01 recursive nameserver args
-# This script expects an optional environment variable KUBECTL to be set to
-# the kubectl invocation (e.g. "microk8s kubectl" or "sudo microk8s kubectl").
-
+# DESCRIPTION: Patch cert-manager deployment to add DNS01 recursive nameserver args
 set -euo pipefail
-source "$(dirname "$0")/lib.sh"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/lib.sh"
 set_common_trap
 detect_kubectl
 ensure_jq >/dev/null 2>&1 || echo "Continuing without jq (will use conservative JSON string checks)."

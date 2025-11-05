@@ -1,18 +1,10 @@
 #!/bin/bash
+# DESCRIPTION: Repair MicroK8s dqlite database quorum and sync cluster state (advanced/dangerous)
 set -euo pipefail
-
-# Shared helpers
-source "$(dirname "$0")/lib.sh"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/lib.sh"
 set_common_trap
 detect_kubectl
-
-function pause(){
-    if [ -t 0 ]; then
-        read -r -p 'Press [Enter] key to continue...'
-    else
-        sleep 10
-    fi
-}
 #pause
 # datestamp is kept for historical/commented code but currently unused
 # datestamp="_"$(date '+%Y_%m_%d_%b')

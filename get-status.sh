@@ -1,8 +1,8 @@
 #!/bin/bash
+# DESCRIPTION: Display basic status of all MicroK8s cluster nodes (read-only)
 set -euo pipefail
-
-# Shared helpers
-source "$(dirname "$0")/lib.sh"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/lib.sh"
 set_common_trap
 detect_kubectl
 

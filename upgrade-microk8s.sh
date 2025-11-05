@@ -1,7 +1,8 @@
 #!/bin/bash
-# Safety: fail fast and print diagnostics on errors
+# DESCRIPTION: Upgrade MicroK8s version on specified nodes with drain/uncordon flow
 set -euo pipefail
-source "$(dirname "$0")/lib.sh"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/lib.sh"
 set_common_trap
 detect_kubectl
 nodeArray=( "${@}" )
