@@ -96,43 +96,8 @@ for nodeFQDN in "${nodeArray[@]}"; do
     ${KUBECTL} get node "$nodeFQDN"
     sudo ssh "$sshDest" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
 done
-cert_manager_json=$(${KUBECTL} get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
-if [ -n "$cert_manager_json" ]; then
-    # Prefer jq for precise JSON handling. If jq is present, locate the container
-    # named "cert-manager-controller" (fallback to index 0) and ensure the args array exists
-    # before attempting to append argument values.
-    if command -v jq >/dev/null 2>&1; then
-        container_index=$(echo "$cert_manager_json" | jq '(.spec.template.spec.containers | to_entries[] | select(.value.name=="cert-manager-controller") | .key) // 0')
-        # create args array if missing
-        if ! echo "$cert_manager_json" | jq -e ".spec.template.spec.containers[$container_index].args" >/dev/null 2>&1; then
-            ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/'"$container_index"'/args","value":[]}]' >/dev/null 2>&1 || true
-            cert_manager_json=$(${KUBECTL} get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
-        fi
-
-        ensure_arg() {
-            local arg="$1"
-            if ! echo "$cert_manager_json" | jq -e ".spec.template.spec.containers[$container_index].args | index(\"$arg\")" >/dev/null 2>&1; then
-                ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/'"$container_index"'/args/-","value":"'$arg'"}]'
-                cert_manager_json=$(${KUBECTL} get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
-            fi
-        }
-
-        ensure_arg "--dns01-recursive-nameservers-only"
-        ensure_arg "--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"
-    else
-        # No jq: fall back to conservative JSON-string checks and assume container 0.
-        # Ensure args array exists (ignore errors if it already exists).
-        ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args","value":[]} ]' >/dev/null 2>&1 || true
-        if ! echo "$cert_manager_json" | grep -q '"--dns01-recursive-nameservers-only"'; then
-            ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--dns01-recursive-nameservers-only"}]'
-        fi
-        if ! echo "$cert_manager_json" | grep -q '"--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"'; then
-            ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"}]'
-        fi
-    fi
-else
-    echo "Warning: cert-manager deployment not found in namespace cert-manager. Skipping DNS patch."
-fi
+export KUBECTL="${KUBECTL:-microk8s kubectl}"
+"$(dirname "$0")/patch-cert-manager.sh"
 ${KUBECTL} -n kubernetes-dashboard patch svc kubernetes-dashboard-kong-proxy --patch='{"spec":{"loadBalancerIP":"10.64.140.8","type": "LoadBalancer"}}'
 ${KUBECTL} -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/coredns-patch.yaml"
 # ${KUBECTL} -n kube-system edit configmap/coredns
