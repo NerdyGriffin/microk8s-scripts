@@ -2,6 +2,17 @@
 set -euo pipefail
 set -o errtrace
 trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
+
+# Determine kubectl invocation (prefer non-sudo)
+if microk8s kubectl version --client >/dev/null 2>&1; then
+    KUBECTL="microk8s kubectl"
+elif sudo microk8s kubectl version --client >/dev/null 2>&1; then
+    KUBECTL="sudo microk8s kubectl"
+else
+    echo "Error: microk8s kubectl not available (tried with and without sudo)" >&2
+    exit 1
+fi
+
 function pause(){
   if [ -t 0 ]; then
     read -p 'Press [Enter] key to continue...'
@@ -10,7 +21,7 @@ function pause(){
   fi
 }
 #pause
-nodeArray=( $(microk8s kubectl get nodes | awk 'NR > 1 {print $1}') )
+nodeArray=( $(${KUBECTL} get nodes | awk 'NR > 1 {print $1}') )
 datestamp="_"$(date '+%Y_%m_%d_%b')
 mkdir -p /shared/microk8s/backend.bak
 for nodeFQDN in "${nodeArray[@]}"; do
@@ -48,7 +59,7 @@ for nodeFQDN in "${nodeArray[@]}"; do
             clear_backend_snapshots
 EOF
         # This is where you copy the stuff to the new node
-        rsync -e 'ssh -q' -amvz \
+    rsync -e 'ssh -q' -amvz \
             --include='cluster.yaml' \
             --include='snapshot-??*-??*-??*' \
             --include='snapshot-??*-??*-??*.meta' \
@@ -65,4 +76,4 @@ for nodeFQDN in "${nodeArray[@]}"; do
     ssh "$sshDest" microk8s start
 done
 #pause
-microk8s kubectl get node
+${KUBECTL} get node

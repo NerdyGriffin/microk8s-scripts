@@ -2,10 +2,21 @@
 set -euo pipefail
 set -o errtrace
 trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
-nodeArray=( $(microk8s kubectl get nodes | awk 'NR > 1 {print $1}') )
+
+# Determine kubectl invocation (prefer non-sudo)
+if microk8s kubectl version --client >/dev/null 2>&1; then
+    KUBECTL="microk8s kubectl"
+elif sudo microk8s kubectl version --client >/dev/null 2>&1; then
+    KUBECTL="sudo microk8s kubectl"
+else
+    echo "Error: microk8s kubectl not available (tried with and without sudo)" >&2
+    exit 1
+fi
+
+nodeArray=( $(${KUBECTL} get nodes | awk 'NR > 1 {print $1}') )
 for nodeFQDN in "${nodeArray[@]}"; do
     sshDest="root@$nodeFQDN"
     echo "$sshDest"
-    # microk8s kubectl get node "$nodeFQDN"
+    # ${KUBECTL} get node "$nodeFQDN"
     # ssh "$sshDest" microk8s status | head -n 4
 done
