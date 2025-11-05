@@ -94,6 +94,7 @@ for nodeFQDN in "${nodeArray[@]}"; do
 done
 export KUBECTL="${KUBECTL:-microk8s kubectl}"
 "$(dirname "$0")/patch-cert-manager.sh"
+echo '#--------------------------------'
 ${KUBECTL} -n kubernetes-dashboard patch svc kubernetes-dashboard-kong-proxy --patch='{"spec":{"loadBalancerIP":"10.64.140.8","type": "LoadBalancer"}}'
 ${KUBECTL} -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/coredns-patch.yaml"
 # ${KUBECTL} -n kube-system edit configmap/coredns
