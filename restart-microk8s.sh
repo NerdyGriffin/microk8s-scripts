@@ -1,8 +1,6 @@
 #!/bin/bash
 nodeArray=( "${@}" )
 if [ $# -eq 0 ]; then
-    # read -p "Enter the hostname of the node you want to restart: " nodeName
-    # nodeArray+=( $nodeName )
     nodeArray=( $(microk8s kubectl get nodes | awk 'NR > 1 {print $1}') )
 fi
 echo "The Microk8s service will be restarted on the following nodes:"
