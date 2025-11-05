@@ -1,19 +1,16 @@
 #!/bin/bash
+# Safety: fail fast and print diagnostics on errors
 set -euo pipefail
-set -o errtrace
-trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
 
-# Determine kubectl invocation (prefer non-sudo)
-if microk8s kubectl version --client >/dev/null 2>&1; then
-    KUBECTL="microk8s kubectl"
-elif sudo microk8s kubectl version --client >/dev/null 2>&1; then
-    KUBECTL="sudo microk8s kubectl"
-else
-    echo "Error: microk8s kubectl not available (tried with and without sudo)" >&2
-    exit 1
-fi
+# Shared helpers
+source "$(dirname "$0")/lib.sh"
+set_common_trap
 
-nodeArray=( $(${KUBECTL} get nodes | awk 'NR > 1 {print $1}') )
+# Shared helpers
+source "$(dirname "$0")/lib.sh"
+detect_kubectl
+
+readarray -t nodeArray < <(${KUBECTL} get nodes -o name 2>/dev/null | sed 's|node/||')
 for nodeFQDN in "${nodeArray[@]}"; do
     sleep 10
     sshDest="root@$nodeFQDN"

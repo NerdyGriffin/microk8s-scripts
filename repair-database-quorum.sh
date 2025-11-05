@@ -1,28 +1,22 @@
 #!/bin/bash
 set -euo pipefail
-set -o errtrace
-trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
 
-# Determine kubectl invocation (prefer non-sudo)
-if microk8s kubectl version --client >/dev/null 2>&1; then
-    KUBECTL="microk8s kubectl"
-elif sudo microk8s kubectl version --client >/dev/null 2>&1; then
-    KUBECTL="sudo microk8s kubectl"
-else
-    echo "Error: microk8s kubectl not available (tried with and without sudo)" >&2
-    exit 1
-fi
+# Shared helpers
+source "$(dirname "$0")/lib.sh"
+set_common_trap
+detect_kubectl
 
 function pause(){
-  if [ -t 0 ]; then
-    read -p 'Press [Enter] key to continue...'
-  else
-    sleep 10
-  fi
+    if [ -t 0 ]; then
+        read -r -p 'Press [Enter] key to continue...'
+    else
+        sleep 10
+    fi
 }
 #pause
-nodeArray=( $(${KUBECTL} get nodes | awk 'NR > 1 {print $1}') )
-datestamp="_"$(date '+%Y_%m_%d_%b')
+# datestamp is kept for historical/commented code but currently unused
+# datestamp="_"$(date '+%Y_%m_%d_%b')
+readarray -t nodeArray < <(${KUBECTL} get nodes -o name 2>/dev/null | sed 's|node/||')
 mkdir -p /shared/microk8s/backend.bak
 for nodeFQDN in "${nodeArray[@]}"; do
     sshDest="root@$nodeFQDN"
@@ -54,7 +48,8 @@ echo "Declared function clear_backend_snapshots()"
 for nodeFQDN in "${nodeArray[@]}"; do
     if [[ "$nodeFQDN" != "kube-10"* ]]; then
         sshDest="root@$nodeFQDN"
-        ssh -q "$sshDest" <<- EOF
+        # shellcheck disable=SC2087
+        ssh -q "$sshDest" <<- 'EOF'
             $(declare -f clear_backend_snapshots)
             clear_backend_snapshots
 EOF

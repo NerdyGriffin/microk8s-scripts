@@ -1,37 +1,13 @@
 #!/bin/bash
 # Safety: fail fast and print diagnostics on errors
-set -euo pipefail
-set -o errtrace
-trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
 # Patch cert-manager deployment to add dns01 recursive nameserver args
 # This script expects an optional environment variable KUBECTL to be set to
 # the kubectl invocation (e.g. "microk8s kubectl" or "sudo microk8s kubectl").
 
-set -u
-
-KUBECTL="${KUBECTL:-}"
-if [ -z "$KUBECTL" ]; then
-    if microk8s kubectl version --client >/dev/null 2>&1; then
-        KUBECTL="microk8s kubectl"
-    elif sudo microk8s kubectl version --client >/dev/null 2>&1; then
-        KUBECTL="sudo microk8s kubectl"
-    else
-        echo "Error: microk8s kubectl not available (tried with and without sudo)" >&2
-        exit 1
-    fi
-fi
-
-# Ensure jq (apt-only installer for Ubuntu)
-ensure_jq() {
-    if command -v jq >/dev/null 2>&1; then
-        return 0
-    fi
-    echo "jq not found — attempting to install jq with apt..."
-    sudo apt-get update && sudo apt-get install -y jq && return 0
-    echo "Failed to install jq via apt. Continuing without jq." >&2
-    return 1
-}
-
+set -euo pipefail
+source "$(dirname "$0")/lib.sh"
+set_common_trap
+detect_kubectl
 ensure_jq >/dev/null 2>&1 || echo "Continuing without jq (will use conservative JSON string checks)."
 
 cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
@@ -39,14 +15,16 @@ if [ -n "$cert_manager_json" ]; then
     if command -v jq >/dev/null 2>&1; then
         container_index=$(echo "$cert_manager_json" | jq '(.spec.template.spec.containers | to_entries[] | select(.value.name=="cert-manager-controller") | .key) // 0')
         if ! echo "$cert_manager_json" | jq -e ".spec.template.spec.containers[$container_index].args" >/dev/null 2>&1; then
-            $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/'"$container_index"'/args","value":[]}]' >/dev/null 2>&1 || true
+            payload=$(printf '[{"op":"add","path":"/spec/template/spec/containers/%s/args","value":[]}]' "$container_index")
+            $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p="$payload" >/dev/null 2>&1 || true
             cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
         fi
 
         ensure_arg() {
             local arg="$1"
             if ! echo "$cert_manager_json" | jq -e ".spec.template.spec.containers[$container_index].args | index(\"$arg\")" >/dev/null 2>&1; then
-                $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/'"$container_index"'/args/-","value":"'$arg'"}]'
+                payload=$(printf '[{"op":"add","path":"/spec/template/spec/containers/%s/args/-","value":"%s"}]' "$container_index" "$arg")
+                $KUBECTL patch deployment cert-manager -n cert-manager --type='json' -p="$payload"
                 cert_manager_json=$($KUBECTL get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
             fi
         }

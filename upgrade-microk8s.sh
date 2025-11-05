@@ -1,31 +1,17 @@
 #!/bin/bash
 # Safety: fail fast and print diagnostics on errors
 set -euo pipefail
-set -o errtrace
-trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
-# Determine kubectl invocation (prefer non-sudo)
-if microk8s kubectl version --client >/dev/null 2>&1; then
-    KUBECTL="microk8s kubectl"
-elif sudo microk8s kubectl version --client >/dev/null 2>&1; then
-    KUBECTL="sudo microk8s kubectl"
-else
-    echo "Error: microk8s kubectl not available (tried with and without sudo)" >&2
-    exit 1
-fi
-function pause(){
-    if [ -t 0 ]; then
-        read -p 'Press [Enter] key to continue...'
-    else
-        sleep 10
-    fi
-}
+source "$(dirname "$0")/lib.sh"
+set_common_trap
+detect_kubectl
 nodeArray=( "${@}" )
 if [ $# -eq 0 ]; then
-    nodeArray=( $(${KUBECTL} get nodes | awk 'NR > 1 {print $1}') )
+    # shellcheck disable=SC2207
+    readarray -t nodeArray < <(${KUBECTL} get nodes -o name 2>/dev/null | sed 's|node/||')
 fi
 echo "The Microk8s version will be upgraded on the following nodes:"
 for nodeFQDN in "${nodeArray[@]}"; do echo "$nodeFQDN"; done
-read -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+read -r -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 for nodeFQDN in "${nodeArray[@]}"; do
     sshDest="root@$nodeFQDN"
     ${KUBECTL} get node "$nodeFQDN"
