@@ -22,25 +22,25 @@ read -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][e
 for nodeName in "${nodeArray[@]}"; do
     nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
     sshDest="root@$nodeFQDN"
-    sudo microk8s kubectl get node "$nodeFQDN"
+    microk8s kubectl get node "$nodeFQDN"
     sudo microk8s disable hostpath-storage:destroy-storage
     sudo microk8s kubectl drain "$nodeFQDN" --delete-emptydir-data --grace-period=600 --ignore-daemonsets --skip-wait-for-delete-timeout=3600
     echo 'Waiting for node to stop...'
     sleep 10
-    sudo microk8s kubectl get node
-    sudo microk8s kubectl get pod -o wide
+    microk8s kubectl get node
+    microk8s kubectl get pod -o wide
     pause
     sudo ssh "$sshDest" sudo snap refresh microk8s --channel=1.34/stable
     sudo ssh "$sshDest" sudo snap refresh microk8s --hold
     sudo ssh "$sshDest" sudo snap alias microk8s.kubectl kubectl
     sudo ssh "$sshDest" sudo microk8s addons repo update core
     sudo ssh "$sshDest" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
-    sudo microk8s kubectl get node "$nodeFQDN"
+    microk8s kubectl get node "$nodeFQDN"
     pause
     sudo microk8s kubectl uncordon "$nodeFQDN"
     echo 'Waiting for node to start...'
     sleep 10
-    sudo microk8s kubectl get node
+    microk8s kubectl get node
 done
 echo 'Would you like to reinstall the core addons (forced upgrade)?'
 echo 'WARNING: This WILL result is downtime for all services and ingress.'
@@ -60,14 +60,14 @@ addonList=(
 )
 sudo microk8s kubectl apply -f /var/snap/microk8s/common/addons/core/addons/metallb/crd.yaml
 for addonName in "${addonList[@]}"; do
-    echo '----------------'
+    echo '#--------------------------------'
     echo "Disabling $addonName... "
     sudo microk8s disable "$addonName"
 done
 sudo microk8s kubectl delete -f /var/snap/microk8s/common/addons/core/addons/metallb/crd.yaml
 sudo microk8s disable hostpath-storage:destroy-storage
 for addonName in "${addonList[@]}"; do
-    echo '----------------'
+    echo '#--------------------------------'
     echo "Enabling $addonName... "
     case "$addonName" in
         "dns")
@@ -86,7 +86,7 @@ nodeArray=( $(microk8s kubectl get nodes | awk 'NR > 1 {print $1}') )
 for nodeName in "${nodeArray[@]}"; do
     nodeFQDN=$(sudo ssh "root@$nodeName" hostname)
     sshDest="root@$nodeFQDN"
-    sudo microk8s kubectl get node "$nodeFQDN"
+    microk8s kubectl get node "$nodeFQDN"
     sudo ssh "$sshDest" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
 done
 sudo microk8s kubectl -n kubernetes-dashboard patch svc kubernetes-dashboard-kong-proxy --patch='{"spec":{"loadBalancerIP":"10.64.140.8","type": "LoadBalancer"}}'
