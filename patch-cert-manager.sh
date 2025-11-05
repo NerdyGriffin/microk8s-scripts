@@ -1,4 +1,8 @@
 #!/bin/bash
+# Safety: fail fast and print diagnostics on errors
+set -euo pipefail
+set -o errtrace
+trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
 # Patch cert-manager deployment to add dns01 recursive nameserver args
 # This script expects an optional environment variable KUBECTL to be set to
 # the kubectl invocation (e.g. "microk8s kubectl" or "sudo microk8s kubectl").

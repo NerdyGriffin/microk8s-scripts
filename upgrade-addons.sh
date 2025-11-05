@@ -1,4 +1,8 @@
 #!/bin/bash
+# Safety: fail fast and print diagnostics on errors
+set -euo pipefail
+set -o errtrace
+trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
 # Determine kubectl invocation (prefer non-sudo)
 if microk8s kubectl version --client >/dev/null 2>&1; then
     KUBECTL="microk8s kubectl"

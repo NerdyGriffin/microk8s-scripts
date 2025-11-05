@@ -1,4 +1,7 @@
 #!/bin/bash
+set -euo pipefail
+set -o errtrace
+trap 'rc=$?; echo "ERROR: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
 function pause(){
   if [ -t 0 ]; then
     read -p 'Press [Enter] key to continue...'
