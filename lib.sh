@@ -7,12 +7,15 @@ detect_kubectl() {
     if [ -n "${KUBECTL:-}" ]; then
         return 0
     fi
-    if microk8s kubectl version --client >/dev/null 2>&1; then
+    # Prefer a system-installed kubectl, then microk8s' wrapper, then sudo'd wrapper
+    if command -v kubectl >/dev/null 2>&1 && kubectl version --client >/dev/null 2>&1; then
+        KUBECTL="kubectl"
+    elif microk8s kubectl version --client >/dev/null 2>&1; then
         KUBECTL="microk8s kubectl"
     elif sudo microk8s kubectl version --client >/dev/null 2>&1; then
         KUBECTL="sudo microk8s kubectl"
     else
-        echo "Error: microk8s kubectl not available (tried with and without sudo)" >&2
+        echo "Error: no usable kubectl found (tried: kubectl, microk8s kubectl, sudo microk8s kubectl)" >&2
         return 1
     fi
     export KUBECTL
