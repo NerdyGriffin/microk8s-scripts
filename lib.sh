@@ -41,8 +41,6 @@ pause() {
     fi
 }
 
-export -f detect_kubectl ensure_jq pause 2>/dev/null || true
-
 set_common_trap() {
     # Install a consistent ERR trap and enable errtrace for functions/subshells.
     set -o errtrace
