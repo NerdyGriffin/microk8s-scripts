@@ -90,37 +90,9 @@ Use these instructions to help write, modify, or extend scripts in this repo so 
   done
   ```
 
-- **Interactive confirmation** — from `restart-microk8s.sh`:
-  ```bash
-  echo "Operation will affect the following nodes:"
-  for nodeFQDN in "${nodeArray[@]}"; do echo "$nodeFQDN"; done
-  read -r -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-  ```
-
-- **Non-interactive mode pattern** — add this to scripts that need automation support:
-  ```bash
-  INTERACTIVE=true
-  while [[ $# -gt 0 ]]; do
-      case $1 in
-          --yes|--non-interactive) INTERACTIVE=false; shift ;;
-          *) break ;;
-      esac
-  done
-
-  confirm_or_exit() {
-      if [ "$INTERACTIVE" = true ]; then
-          read -r -p "$1 Continue? (y/N): " confirm
-          [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-      else
-          echo "$1 [auto-confirmed in non-interactive mode]"
-      fi
-  }
-  ```
-
 ## What to avoid
 
 - Don't remove `set -euo pipefail` or the common trap. That changes failure semantics across all scripts.
-- Don't assume non-interactive runs unless the script documents and implements a `--yes` or `--non-interactive` flag.
 
 ## When you add files
 
