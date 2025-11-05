@@ -8,6 +8,22 @@ else
     echo "Error: microk8s kubectl not available (tried with and without sudo)" >&2
     exit 1
 fi
+
+# Ensure jq is installed. This script runs on Ubuntu, so try apt-only.
+ensure_jq() {
+    if command -v jq >/dev/null 2>&1; then
+        return 0
+    fi
+    echo "jq not found — attempting to install jq with apt..."
+    # Attempt non-interactive apt install; if sudo isn't available or install fails
+    # we return non-zero and the caller will fall back to text-based checks.
+    sudo apt-get update && sudo apt-get install -y jq && return 0
+    echo "Failed to install jq via apt. Please install jq manually if you want precise JSON handling." >&2
+    return 1
+}
+
+# Try to ensure jq is present, but continue on failure (we have a grep fallback)
+ensure_jq >/dev/null 2>&1 || echo "Continuing without jq (will use conservative JSON string checks)."
 function pause(){
     if [ -t 0 ]; then
         sleep 20
@@ -49,7 +65,7 @@ addonList=(
   'ingress'
   'metallb'
   'metrics-server'
-  'observability'
+  # 'observability'
   'rbac'
 )
 ${KUBECTL} apply -f /var/snap/microk8s/common/addons/core/addons/metallb/crd.yaml
@@ -85,11 +101,37 @@ for nodeName in "${nodeArray[@]}"; do
 done
 cert_manager_json=$(${KUBECTL} get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
 if [ -n "$cert_manager_json" ]; then
-    if ! echo "$cert_manager_json" | jq -e '.spec.template.spec.containers[0].args // [] | index("--dns01-recursive-nameservers-only")' >/dev/null; then
-    ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--dns01-recursive-nameservers-only"}]'
-    fi
-    if ! echo "$cert_manager_json" | jq -e '.spec.template.spec.containers[0].args // [] | index("--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53")' >/dev/null; then
-    ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"}]'
+    # Prefer jq for precise JSON handling. If jq is present, locate the container
+    # named "cert-manager-controller" (fallback to index 0) and ensure the args array exists
+    # before attempting to append argument values.
+    if command -v jq >/dev/null 2>&1; then
+        container_index=$(echo "$cert_manager_json" | jq '(.spec.template.spec.containers | to_entries[] | select(.value.name=="cert-manager-controller") | .key) // 0')
+        # create args array if missing
+        if ! echo "$cert_manager_json" | jq -e ".spec.template.spec.containers[$container_index].args" >/dev/null 2>&1; then
+            ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/'"$container_index"'/args","value":[]}]' >/dev/null 2>&1 || true
+            cert_manager_json=$(${KUBECTL} get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
+        fi
+
+        ensure_arg() {
+            local arg="$1"
+            if ! echo "$cert_manager_json" | jq -e ".spec.template.spec.containers[$container_index].args | index(\"$arg\")" >/dev/null 2>&1; then
+                ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/'"$container_index"'/args/-","value":"'$arg'"}]'
+                cert_manager_json=$(${KUBECTL} get -o json deployment cert-manager -n cert-manager 2>/dev/null || true)
+            fi
+        }
+
+        ensure_arg "--dns01-recursive-nameservers-only"
+        ensure_arg "--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"
+    else
+        # No jq: fall back to conservative JSON-string checks and assume container 0.
+        # Ensure args array exists (ignore errors if it already exists).
+        ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args","value":[]} ]' >/dev/null 2>&1 || true
+        if ! echo "$cert_manager_json" | grep -q '"--dns01-recursive-nameservers-only"'; then
+            ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--dns01-recursive-nameservers-only"}]'
+        fi
+        if ! echo "$cert_manager_json" | grep -q '"--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"'; then
+            ${KUBECTL} patch deployment cert-manager -n cert-manager --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"}]'
+        fi
     fi
 else
     echo "Warning: cert-manager deployment not found in namespace cert-manager. Skipping DNS patch."
