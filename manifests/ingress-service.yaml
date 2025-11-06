@@ -17,3 +17,12 @@ spec:
       protocol: TCP
       port: 443
       targetPort: 443
+    # TURN/STUN ports for Nextcloud Talk (talk.nerdygriffin.net)
+    - name: turn-udp
+      protocol: UDP
+      port: 3478
+      targetPort: 3478
+    - name: turn-tcp
+      protocol: TCP
+      port: 3478
+      targetPort: 3478

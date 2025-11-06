@@ -13,7 +13,7 @@ if [ $# -eq 0 ]; then
 fi
 echo "The Microk8s addons will be upgraded on the following nodes:"
 for nodeFQDN in "${nodeArray[@]}"; do echo "$nodeFQDN"; done
-read -r -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+read -r -p "Continue? (Y/n): " confirm && [[ $confirm == [nN] || $confirm == [nN][oO] ]] && exit 1
 for nodeFQDN in "${nodeArray[@]}"; do
     sshDest="root@$nodeFQDN"
     ${KUBECTL} get node "$nodeFQDN"
@@ -36,8 +36,7 @@ addonList=(
 )
 ${KUBECTL} apply -f /var/snap/microk8s/common/addons/core/addons/metallb/crd.yaml
 echo 'Would you like to reinstall the core addons (forced upgrade)?'
-echo 'WARNING: This WILL result is downtime for all services and ingress.'
-read -r -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && {
+read -r -p "WARNING: This WILL result is downtime for all services and ingress. (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && {
     for addonName in "${addonList[@]}"; do
         echo '#--------------------------------'
         echo "Disabling $addonName... "
@@ -70,13 +69,31 @@ for nodeFQDN in "${nodeArray[@]}"; do
     sudo ssh "$sshDest" 'sudo sed -i "s|^\(--resolv-conf=\).*$|\1/run/systemd/resolve/resolv.conf|" /var/snap/microk8s/current/args/kubelet'
 done
 export KUBECTL="${KUBECTL:-microk8s kubectl}"
+
+# Patch cert-manager deployment with custom DNS resolvers (see patch-cert-manager.sh)
 "$(dirname "$0")/patch-cert-manager.sh"
+
 echo '#--------------------------------'
+# Assign static LoadBalancer IP to Kubernetes Dashboard (10.64.140.8)
 ${KUBECTL} -n kubernetes-dashboard patch svc kubernetes-dashboard-kong-proxy --patch='{"spec":{"loadBalancerIP":"10.64.140.8","type": "LoadBalancer"}}'
+
+# Apply CoreDNS custom configuration (adds custom upstream DNS servers and rewrites)
 ${KUBECTL} -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/manifests/coredns-patch.yaml"
-# ${KUBECTL} -n kube-system edit configmap/coredns
+
+# Assign static LoadBalancer IP to kube-dns service for external DNS queries (10.64.140.10)
 ${KUBECTL} -n kube-system patch svc kube-dns --patch='{"spec":{"loadBalancerIP":"10.64.140.10","type": "LoadBalancer"}}'
-${KUBECTL} apply -f "$(dirname "$0")/ingress-service.yaml"
+
+# Apply ingress LoadBalancer service with static IP (10.64.140.1) and TURN/STUN ports
+${KUBECTL} apply -f "$(dirname "$0")/manifests/ingress-service.yaml"
+
+# Ingress controller tweaks: disable server tokens and configure TURN for Nextcloud Talk
+# Hide NGINX server tokens (equivalent to `server_tokens off;`)
+${KUBECTL} -n ingress patch configmap nginx-load-balancer-microk8s-conf --type merge -p '{"data":{"server-tokens":"false"}}' || true
+
+# Route TURN/STUN traffic (UDP/TCP 3478) to the nextcloud-talk service via ingress UDP/TCP configmaps
+# These configmaps are watched by the controller; it will reload automatically
+${KUBECTL} -n ingress patch configmap nginx-ingress-udp-microk8s-conf --type merge -p '{"data":{"3478":"default/nextcloud-talk:3478"}}' || true
+${KUBECTL} -n ingress patch configmap nginx-ingress-tcp-microk8s-conf --type merge -p '{"data":{"3478":"default/nextcloud-talk:3478"}}' || true
 
 # Reinstall origin-ca-issuer from https://github.com/cloudflare/origin-ca-issuer
 initialWorkDir="$(pwd)"
@@ -102,7 +119,7 @@ echo '#--------------------------------'
 echo -n "Change directory to $initialWorkDir...  "
 cd "$initialWorkDir" && echo 'Done' || echo
 echo 'Applying custom ClusterIssuer and OriginIssuer from manifest... '
-${KUBECTL} apply -f "$(dirname "$0")/../manifest/cluster-issuer.yaml"
-${KUBECTL} apply -f "$(dirname "$0")/../manifest/origin-issuer.yaml"
+${KUBECTL} apply -f "$(dirname "$0")/../manifests/cluster-issuer.yaml"
+${KUBECTL} apply -f "$(dirname "$0")/../manifests/origin-issuer.yaml"
 echo
 echo 'Done'
