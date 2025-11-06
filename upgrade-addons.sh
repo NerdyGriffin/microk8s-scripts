@@ -73,7 +73,7 @@ export KUBECTL="${KUBECTL:-microk8s kubectl}"
 "$(dirname "$0")/patch-cert-manager.sh"
 echo '#--------------------------------'
 ${KUBECTL} -n kubernetes-dashboard patch svc kubernetes-dashboard-kong-proxy --patch='{"spec":{"loadBalancerIP":"10.64.140.8","type": "LoadBalancer"}}'
-${KUBECTL} -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/coredns-patch.yaml"
+${KUBECTL} -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/manifests/coredns-patch.yaml"
 # ${KUBECTL} -n kube-system edit configmap/coredns
 ${KUBECTL} -n kube-system patch svc kube-dns --patch='{"spec":{"loadBalancerIP":"10.64.140.10","type": "LoadBalancer"}}'
 ${KUBECTL} apply -f "$(dirname "$0")/ingress-service.yaml"

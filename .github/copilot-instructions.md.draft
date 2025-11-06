@@ -4,6 +4,24 @@ This repository is a small collection of operational helper scripts for managing
 
 Use these instructions to help write, modify, or extend scripts in this repo so changes are consistent and immediately useful.
 
+## Scope and file restrictions
+
+**IMPORTANT**: When making code changes:
+- **Only edit files within** `/home/setup/microk8s/scripts/` (this repository root).
+- **Never modify files in** `/home/setup/microk8s/addons/` or any parent directories outside this repository.
+- **Valid locations for edits**:
+  - Top-level `.sh` scripts in this directory
+  - `lib.sh` (shared helpers)
+  - Files in `experimental/` subdirectory
+  - Documentation files (`README.md`, this file)
+  - YAML patches for Kubernetes resources (e.g., `manifests/coredns-patch.yaml`)
+- **Excluded from edits**:
+  - `/home/setup/microk8s/addons/` — this is the MicroK8s addons directory, managed separately
+  - Any files in parent directories (e.g., `/home/setup/microk8s/` outside `scripts/`)
+  - System files or paths outside this repository
+
+If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decline and suggest alternatives within the repository scope.
+
 ## Big picture
 
 - What this repo contains: short, focused shell scripts (top-level .sh) and small YAML patches (for k8s resources like `coredns-patch.yaml`).
@@ -97,8 +115,10 @@ Use these instructions to help write, modify, or extend scripts in this repo so 
 ## When you add files
 
 - Add new scripts to top-level, source `lib.sh`, and include a short DESCRIPTION comment at the file top explaining operational impact and safety assumptions.
+- **All new files must be created within** `/home/setup/microk8s/scripts/` or its subdirectories.
 - If adding automation-only helpers, place them in `experimental/` or document them clearly in the top-level `README.md` before use.
 - Kubernetes manifests should be in `manifests/`.
+- **Never create files in** `/home/setup/microk8s/addons/` or parent directories.
 
 ## CI and quality checks
 
