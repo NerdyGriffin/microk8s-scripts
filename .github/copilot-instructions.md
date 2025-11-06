@@ -8,7 +8,7 @@ Use these instructions to help write, modify, or extend scripts in this repo so 
 
 **IMPORTANT**: When making code changes:
 - **Only edit files within** `/home/setup/microk8s/scripts/` (this repository root).
-- **Never modify files in** `/home/setup/microk8s/addons/` or any parent directories outside this repository.
+- **Never modify files in** `/home/setup/microk8s/addons/`, `/home/setup/microk8s/origin-ca-issuer`, or any parent directories outside this repository.
 - **Valid locations for edits**:
   - Top-level `.sh` scripts in this directory
   - `lib.sh` (shared helpers)
