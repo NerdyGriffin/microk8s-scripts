@@ -30,11 +30,11 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 
 ## Key files and patterns to reference
 
-- `lib.sh` — canonical shared helpers. Always read this first. Important functions:
-  - `detect_kubectl()` — determines `KUBECTL` (prefers system kubectl, then `microk8s kubectl`, then `sudo microk8s kubectl`). Callers rely on exported `$KUBECTL`.
-  - `ensure_jq()` — attempts an apt install of `jq` (Ubuntu-only) and returns non-zero if not available.
-  - `set_common_trap()` — standard ERR trap used for diagnostics.
-  - `pause()` — interactive pause helper used widely in upgrade scripts.
+- `lib.sh` — canonical shared helpers. Always read this first. All scripts should source this. Important functions:
+  - `detect_kubectl()` — determines `KUBECTL` (prefers `microk8s kubectl` without sudo, falls back to `sudo microk8s kubectl`). Callers rely on exported `$KUBECTL`.
+  - `ensure_jq()` — attempts apt install of `jq` (Ubuntu-only) and returns non-zero if not available.
+  - `set_common_trap()` — standard ERR trap with errtrace enabled for diagnostics.
+  - `pause()` — interactive pause helper with non-interactive fallback used in upgrade scripts.
 
 - Example scripts that show repo conventions:
   - `restart-microk8s.sh` — uses `source lib.sh`, `set -euo pipefail`, `set_common_trap`, `detect_kubectl`, then iterates nodes via SSH as `root@${node}`.
@@ -43,10 +43,11 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 
 ## Coding conventions and assumptions
 
-- All scripts should source `lib.sh` near the top and call `set_common_trap` and `detect_kubectl`.
-  Preferred header:
+- All scripts must source `lib.sh` near the top and call `set_common_trap` and `detect_kubectl`.
+  Preferred header (REQUIRED for all new scripts):
 
   ```bash
+  #!/bin/bash
   DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   source "$DIR/lib.sh"
   set -euo pipefail
@@ -54,9 +55,13 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
   detect_kubectl
   ```
 
-- Exit and error handling: scripts use `set -euo pipefail` + `set_common_trap`. Preserve that pattern rather than introducing custom signal handling unless necessary.
+- Exit and error handling: scripts use `set -euo pipefail` + `set_common_trap` for fail-fast behavior and helpful diagnostics. Preserve that pattern rather than introducing custom signal handling unless necessary.
+  - `-e`: exit immediately on command failures
+  - `-u`: exit on unset variables (use `${VAR:-}` for defaults)
+  - `-o pipefail`: pipelines fail if any command fails
+  - For commands that may intentionally fail, use `cmd || true` or `if cmd; then...; fi`
 - Interactivity: many scripts are interactive (use `pause()` and read prompts). If adding automation-only modes, keep interactivity configurable via flags.
-- `KUBECTL` override: callers may pre-set `KUBECTL` in environment; always honor it.
+- `KUBECTL` wrapper: all scripts use `${KUBECTL}` instead of direct `microk8s kubectl` calls. The `detect_kubectl()` function from `lib.sh` sets this automatically (prefers non-sudo, falls back to sudo). Callers may pre-set `KUBECTL` in environment to override.
 - Platform-specific helpers: `ensure_jq()` uses apt — assume Ubuntu. If you change install logic, document distro assumptions clearly.
 
 ## Developer workflows & quick commands
@@ -72,6 +77,10 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 - Upgrade flow (multi-step, interactive):
 
   `./upgrade-microk8s.sh node1` — reads node list if none provided, drains/uncords, calls `upgrade-addons.sh` when finished.
+
+- Run ingress validation tests:
+
+  `./tests/ingress_unit_test.sh` — discovers all Ingress hosts, validates HTTPS responses and cert SANs
 
 - Debugging tips:
   - Run a script with `bash -x` to trace execution: `bash -x ./upgrade-microk8s.sh node1`.
@@ -118,6 +127,7 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 - **All new files must be created within** `/home/setup/microk8s/scripts/` or its subdirectories.
 - If adding automation-only helpers, place them in `experimental/` or document them clearly in the top-level `README.md` before use.
 - Kubernetes manifests should be in `manifests/`.
+- Unit tests should be in `tests/` subdirectory and follow naming pattern `*_unit_test.sh`.
 - **Never create files in** `/home/setup/microk8s/addons/` or parent directories.
 - After creating a new script, make it executable with: `chmod u+x script.sh`
 
@@ -125,9 +135,15 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 
 To maintain consistency across scripts, consider these validation patterns:
 
-- **Basic shellcheck** — run on all `.sh` files:
+- **Basic shellcheck** — run on all `.sh` files (automatically installed via `apt` if missing):
   ```bash
-  find . -name "*.sh" -exec shellcheck {} \;
+  # Install if missing (Ubuntu)
+  if ! command -v shellcheck >/dev/null 2>&1; then
+    sudo apt-get update && sudo apt-get install -y shellcheck
+  fi
+
+  # Run on all scripts
+  shellcheck *.sh || true
   ```
 
 - **Verify lib.sh sourcing** — ensure new scripts follow the pattern:
