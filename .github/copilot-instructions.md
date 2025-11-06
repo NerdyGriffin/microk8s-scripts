@@ -119,6 +119,7 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 - If adding automation-only helpers, place them in `experimental/` or document them clearly in the top-level `README.md` before use.
 - Kubernetes manifests should be in `manifests/`.
 - **Never create files in** `/home/setup/microk8s/addons/` or parent directories.
+- After creating a new script, make it executable with: `chmod u+x script.sh`
 
 ## CI and quality checks
 
