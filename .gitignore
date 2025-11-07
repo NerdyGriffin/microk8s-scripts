@@ -3,13 +3,13 @@ docs/sessions/
 
 # System / snap symlink targets (node-specific; not portable)
 snap-links/
+helm
 
 # Deprecated / old files
 deprecated/
 
 # Other git repositories for k8s addons (from other developers)
 origin-ca-issuer/
-helm/
 
 # Ignore personal reference files and generic backups
 backend.*
