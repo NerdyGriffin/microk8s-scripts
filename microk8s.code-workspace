@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "/shared/microk8s"
+		}
+	],
+	"settings": {
+		"git.ignoredRepositories": [
+			"/shared/microk8s/origin-ca-issuer"
+		]
+	}
+}

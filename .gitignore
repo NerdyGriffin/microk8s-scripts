@@ -1,2 +1,64 @@
-# Ignore session notes folder (local working notes)
+# Local working notes
 docs/sessions/
+
+# System / snap symlink targets (node-specific; not portable)
+snap-links/
+
+# Deprecated / old files
+deprecated/
+
+# Other git repositories for k8s addons (from other developers)
+origin-ca-issuer/
+helm/
+
+# Ignore personal reference files and generic backups
+backend.*
+*.bak
+*.tmp
+*.restore
+/unsorted/
+
+# --- Essential (backups, runtime state, and sensitive files) ---
+# Backups and large runtime state
+/backup/
+/backend.bak/
+/backend.restore/
+/202*-*-*-backup/
+**/snapshot-*
+dqlite-lock
+temp.json
+
+# Secrets / certs / keys (sensitive)
+cluster.key
+cluster.crt
+*.key
+*.pem
+*.crt
+.env
+.env.*
+
+# cloudflared credentials / tokens
+/cloudflared/*.json
+/cloudflared/*.pem
+
+# --- Recommended (editor, OS, temp, logs) ---
+# Editor / IDE
+.vscode/
+.idea/
+*.sublime-workspace
+
+# OS / temp files
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+*.orig
+
+# Logs and runtime sockets/pids
+*.log
+*.pid
+*.sock
+
+# Local secrets folder (moved secret manifests live here and are intentionally ignored)
+secrets/
