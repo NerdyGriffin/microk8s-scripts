@@ -45,15 +45,15 @@ All scripts source `lib.sh` for consistent behavior. The library provides:
   - Prefers `microk8s kubectl` without sudo
   - Falls back to `sudo microk8s kubectl` if needed
   - Exports `$KUBECTL` for use in scripts
-  
+
 - **`ensure_jq()`** — Attempt to install jq via apt (Ubuntu-only)
   - Returns non-zero if jq cannot be installed
   - Scripts can fall back to grep/awk if jq is unavailable
-  
+
 - **`pause()`** — Interactive pause with non-interactive fallback
   - Prompts user to press Enter when interactive
   - Falls back to sleep when non-interactive (CI/automation)
-  
+
 - **`set_common_trap()`** — Standard error trap for diagnostics
   - Enables `set -o errtrace` for inherited traps
   - Reports failing command and line number on error
