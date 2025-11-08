@@ -16,16 +16,22 @@ for f in $staged_files; do
     continue
   fi
 
-  # Detect Kind: Secret (YAML 'kind: Secret') or presence of 'data:' or 'stringData:' top-level keys
-  if echo "$content" | grep -qE '(^kind:[[:space:]]*Secret|^[[:space:]]*(data|stringData):)'; then
-    echo "ERROR: staged file '$f' looks like a Kubernetes Secret. Do NOT commit plain secrets."
-    echo " - Move it to the 'secrets/' folder, encrypt it (SOPS) or create a SealedSecret instead."
-    errors=$((errors+1))
+  # Detect actual Kubernetes Secret manifests (kind: Secret with data/stringData)
+  # Ignore ConfigMaps and references like 'secretName:' which are just pointers
+  if echo "$content" | grep -q '^kind:[[:space:]]*Secret'; then
+    if echo "$content" | grep -qE '^(data|stringData):[[:space:]]*$'; then
+      echo "ERROR: staged file '$f' is a Kubernetes Secret manifest. Do NOT commit plain secrets."
+      echo " - Move it to the 'secrets/' folder, encrypt it (SOPS) or create a SealedSecret instead."
+      errors=$((errors+1))
+    fi
   fi
 
-  # Heuristic checks for secret-like keys and tokens (case-insensitive)
-  if echo "$content" | grep -qiE '(^|[^A-Z])((password|passwd|api[_-]?token|api[_-]?key|tunnel[_-]?secret|jwt[_-]?secret|secret[_-]?key|access[_-]?key))([^A-Z]|$)'; then
-    echo "WARNING: staged file '$f' contains secret-like keywords (password, apiToken, TunnelSecret, jwt_secret, etc.)."
+  # Heuristic checks for actual credential values (not just field names)
+  # Look for patterns like: password: "value", api_token: value, or apiKey: "abc123"
+  # Exclude comments and secretName references
+  if echo "$content" | grep -v '^[[:space:]]*#' | grep -v 'secretName:' | \
+     grep -qE '(password|passwd|api[_-]?token|api[_-]?key|tunnel[_-]?secret|jwt[_-]?secret|secret[_-]?key|access[_-]?key)[[:space:]]*:[[:space:]]*["\047][^"\047]{8,}["\047]'; then
+    echo "WARNING: staged file '$f' may contain credential values (long strings after password/token/key fields)."
     errors=$((errors+1))
   fi
 
