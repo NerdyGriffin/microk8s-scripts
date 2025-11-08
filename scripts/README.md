@@ -30,8 +30,8 @@ This directory contains shell scripts for cluster lifecycle operations:
 - `upgrade-addons.sh` — Update MicroK8s addons configuration
 
 ### Secret management
-- `install-git-hooks.sh` — Install pre-commit secret scanner
-- `pre-commit-check-secrets.sh` — Pre-commit hook (scans for plaintext secrets)
+- `../dev/git-hooks/install-git-hooks.sh` — Install pre-commit secret scanner
+- `../dev/git-hooks/pre-commit-check-secrets.sh` — Pre-commit hook (scans for plaintext secrets)
 - `move-manifest-secrets.sh` — Move secret manifests to secrets/ folder
 
 ### Experimental

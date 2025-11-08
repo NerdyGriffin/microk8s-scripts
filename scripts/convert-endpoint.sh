@@ -83,7 +83,7 @@ if [ -n "$NEW_PORTS" ]; then
     # Add ports
     jq --argjson new_ports "$NEW_PORTS" '.ports += $new_ports' "$TEMP_MANIFEST" > "$TEMP_MANIFEST.tmp" && mv "$TEMP_MANIFEST.tmp" "$TEMP_MANIFEST"
 fi
-echo "Example created at $TEST_MANIFEST"
+echo "Example created at $TEMP_MANIFEST"
 
 # # Apply the new EndpointSlice manifest
 # echo "Creating EndpointSlice '$ENDPOINT_SLICE_NAME' in namespace '$NAMESPACE'..."

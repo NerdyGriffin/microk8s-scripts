@@ -43,6 +43,7 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 
 ## Coding conventions and assumptions
 
+- All scripts use 4 spaces for indentation (no tabs).
 - All scripts use `#!/usr/bin/env bash` shebang for portability (works on systems where bash may not be at `/bin/bash`).
 - All scripts must source `lib.sh` near the top and call `set_common_trap` and `detect_kubectl`.
   Preferred header (REQUIRED for all new scripts):

@@ -4,15 +4,16 @@ set -euo pipefail
 # pre-commit local check to block plaintext secrets across the repo.
 # Scans ALL staged files (respects .gitignore automatically). Install to .git/hooks/pre-commit.
 
-staged_files=$(git diff --cached --name-only --diff-filter=ACM || true)
-if [ -z "$staged_files" ]; then
+staged_zero=$(git diff --cached --name-only --diff-filter=ACM -z || true)
+if [ -z "$staged_zero" ]; then
   exit 0
 fi
 
 errors=0
-for f in $staged_files; do
-  # get staged version
-  if ! content=$(git show ":$f" 2>/dev/null); then
+# Read NUL-delimited filenames safely (handles spaces/newlines in names)
+while IFS= read -r -d '' f; do
+  # get staged version (use -- to be safe with paths starting with -)
+  if ! content=$(git show -- ":$f" 2>/dev/null); then
     continue
   fi
 
@@ -40,7 +41,7 @@ for f in $staged_files; do
     echo "ERROR: staged file '$f' appears to contain private key material or Argo Tunnel token."
     errors=$((errors+1))
   fi
-done
+done < <(printf '%s' "$staged_zero")
 
 if [ "$errors" -gt 0 ]; then
   echo "Commit aborted by pre-commit secret-scan hook."

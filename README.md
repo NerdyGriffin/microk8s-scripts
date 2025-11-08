@@ -67,7 +67,7 @@ This directory contains operational tooling and notes for managing a MicroK8s Ku
 ### Security & secrets management
 - Install pre-commit hook to prevent committing secrets:
   ```bash
-  ./scripts/install-git-hooks.sh
+  ./dev/git-hooks/install-git-hooks.sh
   ```
 - For detailed security guidance, see [SECURITY.md](SECURITY.md)
 

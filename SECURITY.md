@@ -24,10 +24,10 @@ This repository contains operational tooling for MicroK8s cluster management. So
 Before making any commits, install the secret scanning hook:
 
 ```bash
-./scripts/install-git-hooks.sh
+./dev/git-hooks/install-git-hooks.sh
 ```
 
-This installs `scripts/pre-commit-check-secrets.sh` into `.git/hooks/pre-commit` (local to your clone).
+This installs `dev/git-hooks/pre-commit-check-secrets.sh` into `.git/hooks/pre-commit` (local to your clone).
 
 ### 2. Move secrets to the ignored `secrets/` directory
 
@@ -76,7 +76,7 @@ Document the required secrets in a README or in comments.
 
 ## Pre-Commit Hook
 
-The pre-commit hook (`scripts/pre-commit-check-secrets.sh`) scans all staged files for:
+The pre-commit hook (`dev/git-hooks/pre-commit-check-secrets.sh`) scans all staged files for:
 
 - Kubernetes Secret manifests (`kind: Secret`, `stringData:`, `data:` keys)
 - Secret-like keywords: `password`, `passwd`, `api_token`, `api_key`, `tunnel_secret`, `jwt_secret`, `secret_key`, `access_key`
@@ -90,7 +90,7 @@ If detected, the commit is **aborted** with an error message.
 The hook is local to each git clone (`.git/hooks/` is not versioned). Each developer/admin must run:
 
 ```bash
-./scripts/install-git-hooks.sh
+./dev/git-hooks/install-git-hooks.sh
 ```
 
 ### Bypassing the hook (emergency only)

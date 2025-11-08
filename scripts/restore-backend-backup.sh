@@ -53,11 +53,9 @@ fi
 # Determine if we're operating locally or remotely
 if [[ "$TARGET_NODE" == "$(hostname)" ]] || [[ "$TARGET_NODE" == "localhost" ]]; then
   SSH_PREFIX=""
-  SUDO_PREFIX="sudo"
   echo "Operating on local node..."
 else
   SSH_PREFIX="ssh root@$TARGET_NODE"
-  SUDO_PREFIX=""  # Already root via SSH
   echo "Operating on remote node: $TARGET_NODE"
   # Verify we can reach the node
   if ! $SSH_PREFIX hostname >/dev/null 2>&1; then
@@ -81,11 +79,11 @@ echo "Backing up current backend..."
 BACKUP_TIMESTAMP=$(date '+%Y%m%d-%H%M%S')
 if [[ -z "$SSH_PREFIX" ]]; then
   sudo mkdir -p /var/snap/microk8s/current/var/kubernetes/backend.bak.pre-restore
-  sudo tar -czf /var/snap/microk8s/current/var/kubernetes/backend.bak.pre-restore/backend-${BACKUP_TIMESTAMP}.tar.gz \
+  sudo tar -czf "/var/snap/microk8s/current/var/kubernetes/backend.bak.pre-restore/backend-${BACKUP_TIMESTAMP}.tar.gz" \
     -C /var/snap/microk8s/current/var/kubernetes backend/ 2>/dev/null || true
 else
   $SSH_PREFIX "mkdir -p /var/snap/microk8s/current/var/kubernetes/backend.bak.pre-restore"
-  $SSH_PREFIX "tar -czf /var/snap/microk8s/current/var/kubernetes/backend.bak.pre-restore/backend-${BACKUP_TIMESTAMP}.tar.gz \
+  $SSH_PREFIX "tar -czf '/var/snap/microk8s/current/var/kubernetes/backend.bak.pre-restore/backend-${BACKUP_TIMESTAMP}.tar.gz' \
     -C /var/snap/microk8s/current/var/kubernetes backend/ 2>/dev/null || true"
 fi
 echo "Current backend saved to: backend.bak.pre-restore/backend-${BACKUP_TIMESTAMP}.tar.gz"
