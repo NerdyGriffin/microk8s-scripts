@@ -1,0 +1,19 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nerdygriffin-net
+  namespace: default
+spec:
+  # The secret name where cert-manager should store the signed certificate
+  secretName: nerdygriffin-net-tls
+  dnsNames:
+    - nerdygriffin.net
+  # Duration of the certificate
+  duration: 168h
+  # Renew a day before the certificate expiration
+  renewBefore: 24h
+  # Reference the Origin CA Issuer you created above, which must be in the same namespace.
+  issuerRef:
+    group: cert-manager.k8s.cloudflare.net
+    kind: OriginIssuer
+    name: origin-issuer-prod
