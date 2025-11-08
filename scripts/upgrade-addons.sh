@@ -78,13 +78,13 @@ echo '#--------------------------------'
 ${KUBECTL} -n kubernetes-dashboard patch svc kubernetes-dashboard-kong-proxy --patch='{"spec":{"loadBalancerIP":"10.64.140.8","type": "LoadBalancer"}}'
 
 # Apply CoreDNS custom configuration (adds custom upstream DNS servers and rewrites)
-${KUBECTL} -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/manifests/coredns-patch.yaml"
+${KUBECTL} -n kube-system patch configmap/coredns --patch-file="$(dirname "$0")/../patch/coredns-patch.yaml"
 
 # Assign static LoadBalancer IP to kube-dns service for external DNS queries (10.64.140.10)
 ${KUBECTL} -n kube-system patch svc kube-dns --patch='{"spec":{"loadBalancerIP":"10.64.140.10","type": "LoadBalancer"}}'
 
 # Apply ingress LoadBalancer service with static IP (10.64.140.1) and TURN/STUN ports
-${KUBECTL} apply -f "$(dirname "$0")/manifests/ingress-service.yaml"
+${KUBECTL} apply -f "$(dirname "$0")/../manifests/ingress-service.yaml"
 
 # Ingress controller tweaks: disable server tokens and configure TURN for Nextcloud Talk
 # Hide NGINX server tokens (equivalent to `server_tokens off;`)
@@ -118,8 +118,17 @@ ${KUBECTL} get -n origin-ca-issuer pod
 echo '#--------------------------------'
 echo -n "Change directory to $initialWorkDir...  "
 cd "$initialWorkDir" && echo 'Done' || echo
-echo 'Applying custom ClusterIssuer and OriginIssuer from manifest... '
-${KUBECTL} apply -f "$(dirname "$0")/../manifests/cluster-issuer.yaml"
-${KUBECTL} apply -f "$(dirname "$0")/../manifests/origin-issuer.yaml"
+echo 'Applying custom ClusterIssuer and OriginIssuer from secrets folder (not tracked in git)... '
+echo 'Note: If these files do not exist, you need to create them in the secrets/ directory'
+if [ -f "$(dirname "$0")/../secrets/cluster-issuer.yaml" ]; then
+    ${KUBECTL} apply -f "$(dirname "$0")/../secrets/cluster-issuer.yaml"
+else
+    echo "WARNING: secrets/cluster-issuer.yaml not found - skipping"
+fi
+if [ -f "$(dirname "$0")/../secrets/origin-issuer.yaml" ]; then
+    ${KUBECTL} apply -f "$(dirname "$0")/../secrets/origin-issuer.yaml"
+else
+    echo "WARNING: secrets/origin-issuer.yaml not found - skipping"
+fi
 echo
 echo 'Done'
