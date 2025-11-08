@@ -38,7 +38,7 @@ This directory contains operational tooling and notes for managing a MicroK8s Ku
 
 - **secrets/** — Local plaintext secrets (moved from manifests; DO NOT COMMIT)
 - **cloudflared/** — Cloudflare Tunnel credentials (credentials gitignored)
-- **snap-links/** — Symlinks to local MicroK8s snap paths (node-specific)
+- **symlinks/** — Symlinks to local MicroK8s snap paths (node-specific)
 - **helm/** — Helm charts with embedded credentials (gitignored)
 - **deprecated/** — Archived code/configs (gitignored)
 - **origin-ca-issuer/** — External git repository (gitignored)

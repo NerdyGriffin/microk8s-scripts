@@ -2,7 +2,7 @@
 docs/sessions/
 
 # System / snap symlink targets (node-specific; not portable)
-snap-links/
+symlinks/
 helm
 
 # Deprecated / old files
