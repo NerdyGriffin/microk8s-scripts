@@ -1,5 +1,5 @@
-#!/bin/bash
-# DESCRIPTION: Patch cert-manager deployment to add DNS01 recursive nameserver args
+#!/usr/bin/env bash
+# DESCRIPTION: Patch cert-manager deployment to disable resource validation webhook
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"

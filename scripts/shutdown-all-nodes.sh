@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # DESCRIPTION: Shutdown all MicroK8s cluster nodes via SSH (destructive operation)
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

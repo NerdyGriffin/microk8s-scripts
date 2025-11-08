@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # DESCRIPTION: Restart MicroK8s service on specified nodes (requires confirmation)
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

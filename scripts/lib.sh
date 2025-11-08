@@ -1,5 +1,5 @@
-#!/bin/bash
-# Common helpers for microk8s-scripts
+#!/usr/bin/env bash
+# DESCRIPTION: Shared library of common functions for MicroK8s management scripts
 # Keep this file small and POSIX-friendly for easy sourcing from scripts.
 
 detect_kubectl() {

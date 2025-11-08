@@ -1,11 +1,12 @@
-#!/bin/bash
-
-# A script to convert a Kubernetes Endpoints object to an EndpointSlice.
+#!/usr/bin/env bash
+# DESCRIPTION: Convert a Kubernetes Endpoints object to an EndpointSlice (requires jq)
 # This is useful for migrating manually managed endpoints for selectorless services.
-# Requires: kubectl and jq
-
-# Exit immediately if a command exits with a non-zero status.
-set -e
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/lib.sh"
+set -euo pipefail
+set_common_trap
+detect_kubectl
+ensure_jq
 
 # Validate the command-line arguments
 if [ "$#" -ne 2 ]; then
@@ -19,7 +20,7 @@ ENDPOINT_SLICE_NAME="${ENDPOINT_NAME}-slice"
 SERVICE_NAME="${ENDPOINT_NAME}"
 
 echo "Fetching Endpoints object '$ENDPOINT_NAME' in namespace '$NAMESPACE'..."
-ENDPOINT_DATA=$(kubectl get endpoints "$ENDPOINT_NAME" -n "$NAMESPACE" -o json)
+ENDPOINT_DATA=$(${KUBECTL} get endpoints "$ENDPOINT_NAME" -n "$NAMESPACE" -o json)
 
 # Check if endpoints data was retrieved successfully
 if [ -z "$ENDPOINT_DATA" ]; then

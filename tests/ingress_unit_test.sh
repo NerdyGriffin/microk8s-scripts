@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # DESCRIPTION: Validate ingress endpoints over HTTPS and TLS certificates for all Ingress hosts
 # - Discovers all hosts from kubernetes Ingress resources
 # - For each host:

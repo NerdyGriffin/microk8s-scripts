@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # filepath: /home/setup/microk8s/scripts/restore-database-backup.sh
 # DESCRIPTION: Restore MicroK8s dqlite backend from tar backup (advanced/dangerous - stops cluster)
 set -euo pipefail

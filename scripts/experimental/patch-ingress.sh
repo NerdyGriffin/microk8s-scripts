@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# DESCRIPTION: Patch ingress nginx ConfigMaps to enable forwarded-for headers (experimental)
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/../lib.sh"
 set -euo pipefail

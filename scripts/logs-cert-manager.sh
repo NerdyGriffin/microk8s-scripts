@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# DESCRIPTION: Collect and display cert-manager controller logs
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/lib.sh"
 set -euo pipefail
-trap 'rc=$?; echo "ERROR: line $LINENO: \"$BASH_COMMAND\" exited with $rc" >&2; exit $rc' ERR
-
-# Use KUBECTL wrapper if set, else default to microk8s kubectl
-KUBECTL="${KUBECTL:-microk8s kubectl}"
+set_common_trap
+detect_kubectl
 
 # Get the cert-manager pod name
 POD_NAME=$($KUBECTL get pods -n cert-manager -l app.kubernetes.io/name=cert-manager -o jsonpath='{.items[0].metadata.name}')
