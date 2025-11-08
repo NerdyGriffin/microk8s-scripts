@@ -8,7 +8,7 @@ Use these instructions to help write, modify, or extend scripts in this repo so 
 
 **IMPORTANT**: When making code changes:
 - **Only edit files within** `/home/setup/microk8s/scripts/` (this repository root).
-- **Never modify files in** `/home/setup/microk8s/addons/`, `/home/setup/microk8s/origin-ca-issuer`, or any parent directories outside this repository.
+- **Never modify files in** `/home/setup/microk8s/backup/`, `/home/setup/microk8s/helm/`, `/home/setup/microk8s/origin-ca-issuer`, `/home/setup/microk8s/symlinks/`, or any parent directories outside this repository.
 - **Valid locations for edits**:
   - Top-level `.sh` scripts in this directory
   - `lib.sh` (shared helpers)
@@ -43,11 +43,12 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 
 ## Coding conventions and assumptions
 
+- All scripts use `#!/usr/bin/env bash` shebang for portability (works on systems where bash may not be at `/bin/bash`).
 - All scripts must source `lib.sh` near the top and call `set_common_trap` and `detect_kubectl`.
   Preferred header (REQUIRED for all new scripts):
 
   ```bash
-  #!/bin/bash
+  #!/usr/bin/env bash
   DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   source "$DIR/lib.sh"
   set -euo pipefail
@@ -97,7 +98,7 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 
 - **New script template** — copy this header for consistency:
   ```bash
-  #!/bin/bash
+  #!/usr/bin/env bash
   # DESCRIPTION: Brief description of what this script does and safety assumptions
   set -euo pipefail
   DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
