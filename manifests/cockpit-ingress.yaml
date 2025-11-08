@@ -1,0 +1,67 @@
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: cockpit-hl15-00
+#   labels:
+#     kubernetes.io/service-name: cockpit-hl15-00
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your hl15-00 IP here
+# ports:
+#   - name: cockpit
+#     port: 9090
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cockpit-hl15-00
+spec:
+  ports:
+    - name: cockpit
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: cockpit-hl15-00
+spec:
+  ingressClassName: public
+  rules:
+    - host: cockpit-hl15-00.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: cockpit-hl15-00
+                port:
+                  # name: cockpit
+                  number: 9090
+            path: /
+            pathType: Prefix
+    - host: houston-hl15-00.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: cockpit-hl15-00
+                port:
+                  # name: cockpit
+                  number: 9090
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - cockpit-hl15-00.nerdygriffin.net
+      secretName: cockpit-hl15-00-tls
+    - hosts:
+        - houston-hl15-00.nerdygriffin.net
+      secretName: houston-hl15-00-tls

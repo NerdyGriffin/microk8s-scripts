@@ -1,0 +1,647 @@
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: syncthing
+#   labels:
+#     kubernetes.io/service-name: syncthing
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your syncthing IP here
+# ports:
+#   - name: syncthing
+#     port: 8384
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: syncthing
+spec:
+  ports:
+    - name: syncthing
+      port: 8384
+      protocol: TCP
+      targetPort: 8384
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: syncthing
+spec:
+  ingressClassName: public
+  rules:
+    - host: syncthing.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: syncthing
+                port:
+                  # name: syncthing
+                  number: 8384
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - syncthing.nerdygriffin.net
+      secretName: syncthing-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: nzbget
+#   labels:
+#     kubernetes.io/service-name: nzbget
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your nzbget IP here
+# ports:
+#   - name: nzbget
+#     port: 6789
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nzbget
+spec:
+  ports:
+    - name: nzbget
+      port: 6789
+      protocol: TCP
+      targetPort: 6789
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: nzbget
+spec:
+  ingressClassName: public
+  rules:
+    - host: nzbget.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: nzbget
+                port:
+                  # name: nzbget
+                  number: 6789
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - nzbget.nerdygriffin.net
+      secretName: nzbget-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: sabnzbd
+#   labels:
+#     kubernetes.io/service-name: sabnzbd
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your sabnzbd IP here
+# ports:
+#   - name: sabnzbd
+#     port: 6790
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sabnzbd
+spec:
+  ports:
+    - name: sabnzbd
+      port: 6790
+      protocol: TCP
+      targetPort: 6790
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: sabnzbd
+spec:
+  ingressClassName: public
+  rules:
+    - host: sabnzbd.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: sabnzbd
+                port:
+                  # name: sabnzbd
+                  number: 6790
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - sabnzbd.nerdygriffin.net
+      secretName: sabnzbd-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: transmission
+#   labels:
+#     kubernetes.io/service-name: transmission
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your transmission IP here
+# ports:
+#   - name: transmission
+#     port: 9091
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission
+spec:
+  ports:
+    - name: transmission
+      port: 9091
+      protocol: TCP
+      targetPort: 9091
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: transmission
+spec:
+  ingressClassName: public
+  rules:
+    - host: transmission.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: transmission
+                port:
+                  # name: transmission
+                  number: 9091
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - transmission.nerdygriffin.net
+      secretName: transmission-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: jackett
+#   labels:
+#     kubernetes.io/service-name: jackett
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your jackett IP here
+# ports:
+#   - name: jackett
+#     port: 9117
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jackett
+spec:
+  ports:
+    - name: jackett
+      port: 9117
+      protocol: TCP
+      targetPort: 9117
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: jackett
+spec:
+  ingressClassName: public
+  rules:
+    - host: jackett.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: jackett
+                port:
+                  # name: jackett
+                  number: 9117
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - jackett.nerdygriffin.net
+      secretName: jackett-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: bazarr
+#   labels:
+#     kubernetes.io/service-name: bazarr
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your bazarr IP here
+# ports:
+#   - name: bazarr
+#     port: 6767
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazarr
+spec:
+  ports:
+    - name: bazarr
+      port: 6767
+      protocol: TCP
+      targetPort: 6767
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: bazarr
+spec:
+  ingressClassName: public
+  rules:
+    - host: bazarr.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: bazarr
+                port:
+                  # name: bazarr
+                  number: 6767
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - bazarr.nerdygriffin.net
+      secretName: bazarr-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: lidarr
+#   labels:
+#     kubernetes.io/service-name: lidarr
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your lidarr IP here
+# ports:
+#   - name: lidarr
+#     port: 8686
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lidarr
+spec:
+  ports:
+    - name: lidarr
+      port: 8686
+      protocol: TCP
+      targetPort: 8686
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: lidarr
+spec:
+  ingressClassName: public
+  rules:
+    - host: lidarr.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: lidarr
+                port:
+                  # name: lidarr
+                  number: 8686
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - lidarr.nerdygriffin.net
+      secretName: lidarr-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: prowlarr
+#   labels:
+#     kubernetes.io/service-name: prowlarr
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your prowlarr IP here
+# ports:
+#   - name: prowlarr
+#     port: 9696
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prowlarr
+spec:
+  ports:
+    - name: prowlarr
+      port: 9696
+      protocol: TCP
+      targetPort: 9696
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: prowlarr
+spec:
+  ingressClassName: public
+  rules:
+    - host: prowlarr.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: prowlarr
+                port:
+                  # name: prowlarr
+                  number: 9696
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - prowlarr.nerdygriffin.net
+      secretName: prowlarr-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: radarr
+#   labels:
+#     kubernetes.io/service-name: radarr
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your radarr IP here
+# ports:
+#   - name: radarr
+#     port: 7878
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr
+spec:
+  ports:
+    - name: radarr
+      port: 7878
+      protocol: TCP
+      targetPort: 7878
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: radarr
+spec:
+  ingressClassName: public
+  rules:
+    - host: radarr.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: radarr
+                port:
+                  # name: radarr
+                  number: 7878
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - radarr.nerdygriffin.net
+      secretName: radarr-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: readarr
+#   labels:
+#     kubernetes.io/service-name: readarr
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your readarr IP here
+# ports:
+#   - name: readarr
+#     port: 8787
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: readarr
+spec:
+  ports:
+    - name: readarr
+      port: 8787
+      protocol: TCP
+      targetPort: 8787
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: readarr
+spec:
+  ingressClassName: public
+  rules:
+    - host: readarr.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: readarr
+                port:
+                  # name: readarr
+                  number: 8787
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - readarr.nerdygriffin.net
+      secretName: readarr-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: sonarr
+#   labels:
+#     kubernetes.io/service-name: sonarr
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your sonarr IP here
+# ports:
+#   - name: sonarr
+#     port: 8989
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarr
+spec:
+  ports:
+    - name: sonarr
+      port: 8989
+      protocol: TCP
+      targetPort: 8989
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: sonarr
+spec:
+  ingressClassName: public
+  rules:
+    - host: sonarr.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: sonarr
+                port:
+                  # name: sonarr
+                  number: 8989
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - sonarr.nerdygriffin.net
+      secretName: sonarr-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: tdarr
+#   labels:
+#     kubernetes.io/service-name: tdarr
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your tdarr IP here
+# ports:
+#   - name: tdarr
+#     port: 8265
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tdarr
+spec:
+  ports:
+    - name: tdarr
+      port: 8265
+      protocol: TCP
+      targetPort: 8265
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: tdarr
+spec:
+  ingressClassName: public
+  rules:
+    - host: tdarr.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: tdarr
+                port:
+                  # name: tdarr
+                  number: 8265
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - tdarr.nerdygriffin.net
+      secretName: tdarr-tls

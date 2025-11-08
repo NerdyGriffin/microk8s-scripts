@@ -1,0 +1,107 @@
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: plex
+#   labels:
+#     kubernetes.io/service-name: plex
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your plex IP here
+# ports:
+#   - name: plex
+#     port: 32400
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: plex
+spec:
+  ports:
+    - name: plex
+      port: 32400
+      protocol: TCP
+      targetPort: 32400
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: plex
+spec:
+  ingressClassName: public
+  rules:
+    - host: plex.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: plex
+                port:
+                  # name: plex
+                  number: 32400
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - plex.nerdygriffin.net
+      secretName: plex-tls
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: tautulli
+#   labels:
+#     kubernetes.io/service-name: tautulli
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your tautulli IP here
+# ports:
+#   - name: tautulli
+#     port: 8181
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tautulli
+spec:
+  ports:
+    - name: tautulli
+      port: 8181
+      protocol: TCP
+      targetPort: 8181
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  #    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: tautulli
+spec:
+  ingressClassName: public
+  rules:
+    - host: tautulli.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: tautulli
+                port:
+                  # name: tautulli
+                  number: 8181
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - tautulli.nerdygriffin.net
+      secretName: tautulli-tls

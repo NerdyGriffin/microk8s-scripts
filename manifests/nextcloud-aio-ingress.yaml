@@ -1,0 +1,247 @@
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: nextcloud-aio
+#   labels:
+#     kubernetes.io/service-name: nextcloud-aio
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.30 # Insert your nextcloud IP here
+# ports:
+#   - name: nextcloud-aio
+#     port: 8080
+#     protocol: TCP
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: nextcloud
+#   labels:
+#     kubernetes.io/service-name: nextcloud
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.30 # Insert your nextcloud IP here
+# ports:
+#   - name: nextcloud
+#     port: 11000
+#     protocol: TCP
+# ---
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: nextcloud-talk
+#   labels:
+#     kubernetes.io/service-name: nextcloud-talk
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.30 # Insert your nextcloud-talk IP here
+# ports:
+#   - name: nextcloud-talk-tcp
+#     port: 3478
+#     protocol: TCP
+#   - name: nextcloud-talk-udp
+#     port: 3478
+#     protocol: UDP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud-aio
+spec:
+  ports:
+    - name: nextcloud-aio
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  type: ExternalName
+  externalName: nextcloud-30.lan.nerdygriffin.net
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud
+spec:
+  ports:
+    - name: nextcloud
+      port: 11000
+      protocol: TCP
+      targetPort: 11000
+  type: ExternalName
+  externalName: nextcloud-30.lan.nerdygriffin.net
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud-talk
+spec:
+  ports:
+    - name: nextcloud-talk-tcp
+      port: 3478
+      protocol: TCP
+      targetPort: 3478
+    - name: nextcloud-talk-udp
+      port: 3478
+      protocol: UDP
+      targetPort: 3478
+  type: ExternalName
+  externalName: nextcloud-30.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: nextcloud-aio
+spec:
+  ingressClassName: public
+  rules:
+    - host: nextcloud-aio.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: nextcloud-aio
+                port:
+                  # name: nextcloud-aio
+                  number: 8080
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - nextcloud-aio.nerdygriffin.net
+      secretName: nextcloud-aio-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    # Defaults:
+    nginx.ingress.kubernetes.io/proxy-body-size: 4G
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    #    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # Preserving Source IP (https://artifacthub.io/packages/helm/nextcloud/nextcloud#preserving-source-ip)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "X-Forwarded-For"
+    # Replace server-snippet with supported annotations/Ingresses
+    # Hide headers previously set in server-snippet
+    nginx.ingress.kubernetes.io/proxy-hide-headers: "X-Powered-By"
+  name: nextcloud
+spec:
+  ingressClassName: public
+  rules:
+    - host: nextcloud.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: nextcloud
+                port:
+                  # name: nextcloud
+                  number: 11000
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - nextcloud.nerdygriffin.net
+      secretName: nextcloud-tls
+---
+## Redirect helper Ingresses for Nextcloud well-known endpoints (no snippets required)
+## Note: talk.nerdygriffin.net uses TURN/STUN on UDP/TCP 3478 (and optionally 5349 for TLS TURN),
+## routed via ingress controller's UDP/TCP configmaps—no HTTP Ingress needed.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nextcloud-redirects-carddav-caldav
+  annotations:
+    nginx.ingress.kubernetes.io/permanent-redirect: "$scheme://$host/remote.php/dav"
+spec:
+  ingressClassName: public
+  rules:
+    - host: nextcloud.nerdygriffin.net
+      http:
+        paths:
+          - path: /.well-known/carddav
+            pathType: Exact
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  number: 11000
+          - path: /.well-known/caldav
+            pathType: Exact
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  number: 11000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nextcloud-redirects-webfinger-nodeinfo
+  annotations:
+    nginx.ingress.kubernetes.io/permanent-redirect: "$scheme://$host/index.php$request_uri"
+spec:
+  ingressClassName: public
+  rules:
+    - host: nextcloud.nerdygriffin.net
+      http:
+        paths:
+          - path: /.well-known/webfinger
+            pathType: Exact
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  number: 11000
+          - path: /.well-known/nodeinfo
+            pathType: Exact
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  number: 11000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nextcloud-redirect-hostmeta
+  annotations:
+    nginx.ingress.kubernetes.io/permanent-redirect: "$scheme://$host/public.php?service=host-meta"
+spec:
+  ingressClassName: public
+  rules:
+    - host: nextcloud.nerdygriffin.net
+      http:
+        paths:
+          - path: /.well-known/host-meta
+            pathType: Exact
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  number: 11000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nextcloud-redirect-hostmeta-json
+  annotations:
+    nginx.ingress.kubernetes.io/permanent-redirect: "$scheme://$host/public.php?service=host-meta-json"
+spec:
+  ingressClassName: public
+  rules:
+    - host: nextcloud.nerdygriffin.net
+      http:
+        paths:
+          - path: /.well-known/host-meta.json
+            pathType: Exact
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  number: 11000

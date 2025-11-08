@@ -1,0 +1,53 @@
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: ombi
+#   labels:
+#     kubernetes.io/service-name: ombi
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your ombi IP here
+# ports:
+#   - name: ombi
+#     port: 3579
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ombi
+spec:
+  ports:
+    - name: ombi
+      port: 3579
+      protocol: TCP
+      targetPort: 3579
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: ombi
+spec:
+  ingressClassName: public
+  rules:
+    - host: ombi.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: ombi
+                port:
+                  # name: ombi
+                  number: 3579
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - ombi.nerdygriffin.net
+      secretName: ombi-tls

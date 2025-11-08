@@ -1,0 +1,53 @@
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: portainer
+#   labels:
+#     kubernetes.io/service-name: portainer
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your portainer IP here
+# ports:
+#   - name: portainer
+#     port: 9443
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer
+spec:
+  ports:
+    - name: portainer
+      port: 9443
+      protocol: TCP
+      targetPort: 9443
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: portainer
+spec:
+  ingressClassName: public
+  rules:
+    - host: portainer.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: portainer
+                port:
+                  # name: portainer
+                  number: 9443
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - portainer.nerdygriffin.net
+      secretName: portainer-tls

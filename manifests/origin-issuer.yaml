@@ -1,0 +1,28 @@
+---
+apiVersion: cert-manager.k8s.cloudflare.com/v1
+kind: OriginIssuer
+metadata:
+  name: origin-issuer-prod
+spec:
+  requestType: OriginECC
+  auth:
+#    serviceKeyRef:
+#      name: cloudflare-origin-issuer-service-key
+#      key: service-key
+    tokenRef:
+      name: cloudflare-origin-issuer-api-token
+      key: api-token
+---
+apiVersion: cert-manager.k8s.cloudflare.com/v1
+kind: OriginIssuer
+metadata:
+  name: origin-issuer-staging
+spec:
+  requestType: OriginECC
+  auth:
+#    serviceKeyRef:
+#      name: cloudflare-origin-issuer-service-key
+#      key: service-key
+    tokenRef:
+      name: cloudflare-origin-issuer-api-token
+      key: api-token

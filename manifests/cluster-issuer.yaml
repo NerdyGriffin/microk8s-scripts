@@ -1,0 +1,59 @@
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: christian.kunis@nerdygriffin.net
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource that will be used to store the account's private key.
+      name: lets-encrypt-private-key
+    solvers:
+      - dns01:
+          cloudflare:
+            email: christian.kunis@nerdygriffin.net
+            apiTokenSecretRef:
+              name: cloudflare-api-token-secret
+              key: api-token
+        selector:
+          dnsZones:
+            - "nerdygriffin.net"
+#      - dns01:
+#          cloudflare:
+#            email: christian.kunis@nerdygriffin.net
+#            apiTokenSecretRef:
+#              name: cloudflare-api-token-secret
+#              key: api-token
+#        selector:
+#          matchLabels:
+#            "email": "ckunis98@gmail.com"
+#            "solver": "cloudflare"
+#          dnsZones:
+#            - "nerdygriffin.net"
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    email: christian.kunis@nerdygriffin.net
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource that will be used to store the account's private key.
+      name: lets-encrypt-private-key
+    solvers:
+      - dns01:
+          cloudflare:
+            email: christian.kunis@nerdygriffin.net
+            apiTokenSecretRef:
+              name: cloudflare-api-token-secret
+              key: api-token
+        selector:
+          dnsZones:
+            - "nerdygriffin.net"
+#    - http01:
+#        ingress:
+#          class: public

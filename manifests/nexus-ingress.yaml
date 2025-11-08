@@ -1,0 +1,53 @@
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: nexus
+#   labels:
+#     kubernetes.io/service-name: nexus
+# addressType: IPv4
+# endpoints:
+#   - addresses:
+#       - 10.9.20.150 # Insert your nexus IP here
+# ports:
+#   - name: nexus
+#     port: 8081
+#     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus
+spec:
+  ports:
+    - name: nexus
+      port: 8081
+      protocol: TCP
+      targetPort: 8081
+  type: ExternalName
+  externalName: hl15-00.lan.nerdygriffin.net
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  #    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: nexus
+spec:
+  ingressClassName: public
+  rules:
+    - host: nexus.nerdygriffin.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: nexus
+                port:
+                  # name: nexus
+                  number: 8081
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - nexus.nerdygriffin.net
+      secretName: nexus-tls
