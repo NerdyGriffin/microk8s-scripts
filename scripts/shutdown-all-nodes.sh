@@ -9,6 +9,8 @@ detect_kubectl
 readarray -t nodeArray < <(${KUBECTL} get nodes -o name 2>/dev/null | sed 's|node/||')
 for nodeFQDN in "${nodeArray[@]}"; do
     sleep 10
+    echo '----'
+    echo "$nodeFQDN"
     sshDest="root@$nodeFQDN"
     ssh "$sshDest" shutdown
 done

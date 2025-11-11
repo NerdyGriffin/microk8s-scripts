@@ -14,6 +14,8 @@ echo "The Microk8s version will be upgraded on the following nodes:"
 for nodeFQDN in "${nodeArray[@]}"; do echo "$nodeFQDN"; done
 read -r -p "Continue? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 for nodeFQDN in "${nodeArray[@]}"; do
+    echo '---'
+    echo "$nodeFQDN"
     sshDest="root@$nodeFQDN"
     ${KUBECTL} get node "$nodeFQDN"
     sudo microk8s disable hostpath-storage:destroy-storage
