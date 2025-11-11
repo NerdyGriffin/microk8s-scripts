@@ -8,5 +8,10 @@
 		"git.ignoredRepositories": [
 			"/shared/microk8s/origin-ca-issuer"
 		]
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-kubernetes-tools.vscode-kubernetes-tools"
+		]
 	}
 }
