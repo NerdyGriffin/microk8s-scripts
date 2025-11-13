@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "/shared/microk8s"
+		},
+		{
+			"path": "../ansible"
 		}
 	],
 	"settings": {
@@ -11,7 +14,8 @@
 	},
 	"extensions": {
 		"recommendations": [
-			"ms-kubernetes-tools.vscode-kubernetes-tools"
+			"ms-kubernetes-tools.vscode-kubernetes-tools",
+			"redhat.vscode-yaml"
 		]
 	}
 }
