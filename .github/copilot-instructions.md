@@ -7,39 +7,40 @@ Use these instructions to help write, modify, or extend scripts in this repo so 
 ## Scope and file restrictions
 
 **IMPORTANT**: When making code changes:
-- **Only edit files within** `/home/setup/microk8s/scripts/` (this repository root).
-- **Never modify files in** `/home/setup/microk8s/backup/`, `/home/setup/microk8s/helm/`, `/home/setup/microk8s/origin-ca-issuer`, `/home/setup/microk8s/symlinks/`, or any parent directories outside this repository.
+- **Only edit files within** the repository root `/shared/microk8s/`.
+- **Never modify files in** `/shared/microk8s/backup/`, `/shared/microk8s/helm/`, `/shared/microk8s/origin-ca-issuer`, `/shared/microk8s/symlinks/`, or any parent directories outside this repository.
 - **Valid locations for edits**:
-  - Top-level `.sh` scripts in this directory
-  - `lib.sh` (shared helpers)
-  - Files in `experimental/` subdirectory
+  - `.sh` scripts in `scripts/` subdirectory
+  - `scripts/lib.sh` (shared helpers)
+  - Files in `scripts/experimental/` subdirectory
+  - Unit tests in `tests/` subdirectory
   - Documentation files (`README.md`, this file)
-  - YAML patches for Kubernetes resources (e.g., `manifests/coredns-patch.yaml`)
+  - YAML patches for Kubernetes resources (e.g., `patch/coredns-patch.yaml`, files in `manifests/`)
 - **Excluded from edits**:
-  - `/home/setup/microk8s/addons/` — this is the MicroK8s addons directory, managed separately
-  - Any files in parent directories (e.g., `/home/setup/microk8s/` outside `scripts/`)
+  - `/shared/microk8s/addons/` — this is the MicroK8s addons directory, managed separately
+  - Any files in parent directories (e.g., `/shared/` or `/home/setup/` outside this repository)
   - System files or paths outside this repository
 
-If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decline and suggest alternatives within the repository scope.
+If asked to modify files outside the repository scope, politely decline and suggest alternatives within the repository scope.
 
 ## Big picture
 
-- What this repo contains: short, focused shell scripts (top-level .sh) and small YAML patches (for k8s resources like `coredns-patch.yaml`).
+- What this repo contains: short, focused shell scripts in `scripts/` directory and small YAML patches in `manifests/` and `patch/` (for k8s resources).
 - Main responsibilities: node lifecycle operations (restart, upgrade), cluster diagnostics/backups (`repair-database-quorum.sh`), and addon/patch tooling.
 - Why: centralize reusable admin tasks and reduce ad-hoc SSH/manual steps.
 
 ## Key files and patterns to reference
 
-- `lib.sh` — canonical shared helpers. Always read this first. All scripts should source this. Important functions:
+- `scripts/lib.sh` — canonical shared helpers. Always read this first. All scripts should source this. Important functions:
   - `detect_kubectl()` — determines `KUBECTL` (prefers `microk8s kubectl` without sudo, falls back to `sudo microk8s kubectl`). Callers rely on exported `$KUBECTL`.
   - `ensure_jq()` — attempts apt install of `jq` (Ubuntu-only) and returns non-zero if not available.
   - `set_common_trap()` — standard ERR trap with errtrace enabled for diagnostics.
   - `pause()` — interactive pause helper with non-interactive fallback used in upgrade scripts.
 
 - Example scripts that show repo conventions:
-  - `restart-microk8s.sh` — uses `source lib.sh`, `set -euo pipefail`, `set_common_trap`, `detect_kubectl`, then iterates nodes via SSH as `root@${node}`.
-  - `upgrade-microk8s.sh` — demonstrates non-destructive drains/uncordon flow and uses `pause()` at key manual checkpoints.
-  - `repair-database-quorum.sh` — shows advanced dqlite manipulation and rsync/ssh usage for backend data.
+  - `scripts/restart-microk8s.sh` — uses `source lib.sh`, `set -euo pipefail`, `set_common_trap`, `detect_kubectl`, then iterates nodes via SSH as `root@${node}`.
+  - `scripts/upgrade-microk8s.sh` — demonstrates non-destructive drains/uncordon flow and uses `pause()` at key manual checkpoints.
+  - `scripts/repair-database-quorum.sh` — shows advanced dqlite manipulation and rsync/ssh usage for backend data.
 
 ## Coding conventions and assumptions
 
@@ -70,30 +71,34 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 
 - Run a status probe (no cluster changes):
 
-  `./get-status.sh`
+  `./scripts/get-status.sh`
 
 - Restart MicroK8s on specific nodes (prompted confirmation):
 
-  `./restart-microk8s.sh node1 node2`
+  `./scripts/restart-microk8s.sh node1 node2`
 
 - Upgrade flow (multi-step, interactive):
 
-  `./upgrade-microk8s.sh node1` — reads node list if none provided, drains/uncords, calls `upgrade-addons.sh` when finished.
+  `./scripts/upgrade-microk8s.sh node1` — reads node list if none provided, drains/uncords, calls `upgrade-addons.sh` when finished.
 
 - Run ingress validation tests:
 
   `./tests/ingress_unit_test.sh` — discovers all Ingress hosts, validates HTTPS responses and cert SANs
 
+- Run all infrastructure unit tests:
+
+  `./tests/infra_unit_tests.sh` — aggregates results from all unit tests
+
 - Debugging tips:
-  - Run a script with `bash -x` to trace execution: `bash -x ./upgrade-microk8s.sh node1`.
+  - Run a script with `bash -x` to trace execution: `bash -x ./scripts/upgrade-microk8s.sh node1`.
   - If `kubectl` isn't detected, set `KUBECTL="microk8s kubectl"` and re-run.
-  - Look at `lib.sh` trap messages for the failing command and line number.
+  - Look at `scripts/lib.sh` trap messages for the failing command and line number.
 
 ## Integration points & environment
 
 - SSH to nodes as `root@<fqdn>` is used throughout. New code should adopt the same model (or centralize SSH behavior to a helper function).
-- Snap/snap-refresh commands are used for microk8s upgrades (see `upgrade-microk8s.sh`). Be conservative: upgrades are interactive and involve draining.
-- Config patches (like `coredns-patch.yaml`) are applied directly against the cluster using `$KUBECTL`.
+- Snap/snap-refresh commands are used for microk8s upgrades (see `scripts/upgrade-microk8s.sh`). Be conservative: upgrades are interactive and involve draining.
+- Config patches (like `patch/coredns-patch.yaml`) are applied directly against the cluster using `$KUBECTL`.
 
 ## Examples to copy from
 
@@ -108,7 +113,7 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
   detect_kubectl
   ```
 
-- **Node iteration pattern** — from `restart-microk8s.sh` and `upgrade-microk8s.sh`:
+- **Node iteration pattern** — from `scripts/restart-microk8s.sh` and `scripts/upgrade-microk8s.sh`:
   ```bash
   nodeArray=( "${@}" )
   if [ $# -eq 0 ]; then
@@ -125,12 +130,12 @@ If asked to modify files outside `/home/setup/microk8s/scripts/`, politely decli
 
 ## When you add files
 
-- Add new scripts to top-level, source `lib.sh`, and include a short DESCRIPTION comment at the file top explaining operational impact and safety assumptions.
-- **All new files must be created within** `/home/setup/microk8s/scripts/` or its subdirectories.
-- If adding automation-only helpers, place them in `experimental/` or document them clearly in the top-level `README.md` before use.
+- Add new scripts to `scripts/` subdirectory, source `lib.sh`, and include a short DESCRIPTION comment at the file top explaining operational impact and safety assumptions.
+- **All new files must be created within** `/shared/microk8s/` repository root or its subdirectories.
+- If adding automation-only helpers, place them in `scripts/experimental/` or document them clearly in the top-level `README.md` before use.
 - Kubernetes manifests should be in `manifests/`.
 - Unit tests should be in `tests/` subdirectory and follow naming pattern `*_unit_test.sh`.
-- **Never create files in** `/home/setup/microk8s/addons/` or parent directories.
+- **Never create files in** `/shared/microk8s/addons/`, `/shared/microk8s/backup/`, `/shared/microk8s/helm/`, `/shared/microk8s/origin-ca-issuer`, `/shared/microk8s/symlinks/`, or any parent directories outside this repository.
 - After creating a new script, make it executable with: `chmod u+x script.sh`
 
 ## CI and quality checks
