@@ -1,4 +1,4 @@
-# Project TODOs
+# Microk8s TODOs
 
 - [ ] Convert the automation script to ansible playbooks
 - [ ] Setup locally hosted ollama, either in the docker with GPU
