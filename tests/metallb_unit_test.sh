@@ -6,7 +6,7 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$DIR/.." && pwd)"
-source "$ROOT_DIR/lib.sh"
+source "$ROOT_DIR/scripts/lib.sh"
 set_common_trap
 detect_kubectl
 ensure_jq || true
@@ -67,6 +67,19 @@ if ${KUBECTL} get crd ipaddresspools.metallb.io >/dev/null 2>&1; then
   fi
 else
   log "INFO  MetalLB IPAddressPool CRD not found; skipping pool check"
+fi
+
+# Check L2Advertisement exists (if CRD present)
+if ${KUBECTL} get crd l2advertisements.metallb.io >/dev/null 2>&1; then
+  l2ad_json="$(${KUBECTL} get l2advertisements.metallb.io -A -o json)"
+  l2ad_count="$(echo "$l2ad_json" | jq '.items | length')"
+  if [ "$l2ad_count" -gt 0 ]; then
+    log "PASS  Found ${l2ad_count} MetalLB L2Advertisement(s)"
+  else
+    log "WARN  No MetalLB L2Advertisements found (Layer 2 mode may not be configured)"
+  fi
+else
+  log "INFO  MetalLB L2Advertisement CRD not found; skipping L2 check"
 fi
 
 exit ${exit_code}

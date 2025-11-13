@@ -7,7 +7,7 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$DIR/.." && pwd)"
-source "$ROOT_DIR/lib.sh"
+source "$ROOT_DIR/scripts/lib.sh"
 set_common_trap
 detect_kubectl
 ensure_jq || true
